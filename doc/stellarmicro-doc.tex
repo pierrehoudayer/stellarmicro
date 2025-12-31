@@ -1,0 +1,944 @@
+% stellarmicro-doc.tex
+% Notes / documentation draft for the stellarmicro package
+% (work in progress; meant to become user-facing docs later)
+
+\documentclass[11pt,a4paper]{article}
+
+% --- encoding / language (pdfLaTeX)
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french, english]{babel}
+
+% --- layout / typography
+\usepackage{geometry}
+\geometry{
+	paper=a4paper, % Change to letterpaper for US letter
+	inner=1.8cm, % Inner margin
+	outer=1.8cm, % Outer margin
+	top=2.cm, % Top margin
+	bottom=2.cm, % Bottom margin
+}
+\usepackage{microtype}
+\usepackage{parskip} % sans indentation
+
+% --- maths
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{bm}
+\usepackage{mathrsfs}
+\usepackage{nicematrix}
+
+% --- figures (activer quand nécessaire)
+\usepackage{graphicx}
+% \usepackage{subcaption}
+% \usepackage{float}
+% \usepackage{adjustbox}
+
+% --- links (near the end)
+\usepackage{xcolor}
+\definecolor{gold}{rgb}{0.65, 0.4, 0.0}
+\usepackage[linktocpage=true]{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=gold,
+  citecolor=gold,
+  urlcolor=gold
+}
+
+% --- optional utilities
+% \usepackage{multicol}
+% \usepackage{ragged2e}
+% \usepackage{pifont}
+% \usepackage{pax}
+% \usepackage{emptypage}
+% \usepackage{minitoc}
+
+% --- abreviations
+\newcommand{\ie}{{\textit{i.e.}\ }}
+\newcommand{\eg}{{\textit{e.g.}\ }}
+\newcommand{\cf}{{\textit{c.f.}\ }}
+
+% --- maths
+\renewcommand{\vec}[1]{\bm{#1}}
+\renewcommand{\d}{{\partial}}
+\newcommand{\dv}{{\vec{\partial}}}
+
+% --- physics
+\newcommand{\e}{\mathrm{e}}
+\newcommand{\kb}{k_{\mathrm{B}}}
+\newcommand{\me}{m_{\mathrm{e}}}
+\newcommand{\muu}{m_{\mathrm{u}}}
+
+\title{Microphysique stellaire analytique (\texttt{stellarmicro})}
+\author{Pierre Houdayer \& \texttt{69359f40-ae50-832b-9492-e8c9f2fbe3df}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Ce document vise à recenser l'ensemble des développements analytiques ayant servis à l'élaboration de \texttt{stellarmicro}. L'objectif d'un tel module est en premier lieu d'accélérer les calculs s'appuyant sur des équations d'état tout en conservant une cohérence thermodynamique globale.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Formalisme multi-espèce et conventions d'écriture}
+\label{sec:multispecies}
+
+\subsection{Convention d'indice et normalisation}
+
+Par la suite on utilisera la convention d'indice qui suit : 
+\begin{itemize}
+	\item Les indices $\{ i \}$ désigneront l'ensemble des éléments par leur nombre atomique : H ($i=1$), He ($i=2$), ... Il nous arrivera de regrouper les l'ensemble des variables dépendant de $i$ dans un vecteur, par exemple $\vec{x} = (x_i)_i$.
+	\item Les indices $\{i, r\}$ désigneront l'ensemble des éléments munis de leurs états d'ionisation : H$^0$, H$^1$, He$^0$, He$^1$, He$^2$, ...
+	\item Les indices grecs $\{ \alpha \}$ désigneront l'ensemble des espèces au sens large, \ie, dans le cas général, l'ensemble des $\{i, r\}$ auxquels s'ajouteront les électrons $\e$. On regroupera de temps à autres les variables dépendant de $\alpha$ dans un autre vecteur, étendu, noté $\vec{x}_\star = (x_\alpha)_\alpha$.
+\end{itemize}
+
+On introduira ainsi $n_{\alpha}$ et $\rho_{\alpha}$, respectivement les densités en nombre et en masse par unité de volume pour l'espèce $\alpha$. Nos conventions d'indices s'étendant naturellement aux sommes, on définira la masse totale :
+\begin{equation}
+    \rho \equiv \sum_{\alpha} \rho_{\alpha} \simeq \sum_{ir} \rho_i^r,
+\end{equation}
+la masse de l’électron étant négligeable de devant celle des autres espèces.
+On choisira la densité en nombre de référence comme étant le nombre de noyaux par unité de volume
+\begin{equation}
+    n \equiv \sum_{ir} n_i^r.
+\end{equation}
+
+On définira les fractions en nombre par rapport à $n$,
+\begin{equation}
+    x_{\alpha} \equiv \frac{n_{\alpha}}{n},
+\end{equation}
+ce qui donne par construction :
+\begin{equation}
+    \sum_{ir} x_i^r =  1.
+\end{equation}
+Par contraste, la sommation sur l'ensemble des espèces fournit
+\begin{equation}
+    \sum_{\alpha} x_{\alpha} = \frac{1}{n}\left(\sum_{ir} n_i^r + n_e\right) = 1 + \frac{n_e}{n} \neq 1.
+\end{equation}
+
+Les fractions en masse (ou abondances) seront également définies par rapport à la densité de référence, qui correspond cette fois à la densité totale
+\begin{equation}
+    X_{\alpha} \equiv \frac{\rho_{\alpha}}{\rho},
+\end{equation}
+ce qui donne, indépendemment du choix de sommation,
+\begin{equation}
+    \sum_{\alpha} X_{\alpha} \simeq \sum_{ir} X_i^r = 1.
+\end{equation}
+
+\subsection{Moyennes en nombre et en masse}
+
+On voit ainsi que, si l'on souhaite définir une moyenne pondérée, la sommation sur $\{ir\}$ s'impose, car disposant d'une pondération normalisée. 
+Il y a deux moyens de choisir ces poids, soit en nombre, soit en masse, ce qui donne lieu à deux moyennes pour une grandeur $a_i^r$ dépendant de l'état d'ionisation :
+\begin{equation}
+	\label{eq:def_averages}
+	\langle a\rangle \equiv \sum_{ir} x_i^r\,a_i^r, 
+	\quad \text{et} \quad
+	\{ a \} \equiv \sum_{ir} X_i^r\,a_i^r,
+\end{equation}
+que l'on appellera moyennes en nombre et en masse (et dont les écritures sont volontairement reminiscentes des moyennes de Reynolds et Favre).
+Un exemple apparaissant très régulièrement est le nombre de charge moyen par noyau :
+\begin{equation}
+	\bar{r} = \langle r \rangle = \sum_{ir} r x_i^r.
+\end{equation}
+
+Ces moyennes peuvent être très utiles pour faire des liens entre grandeurs.
+Puisque $\rho_i^r = m_i^r n_i^r \simeq m_i n_i^r$, le lien entre ces deux densité de référence sera donné par :
+\begin{equation}
+	\rho = \sum_{ir} m_i n_i^r = \left (\sum_{ir} m_i x_i^r \right ) n = \bar{m} n,
+\end{equation}
+définissant ainsi la masse moyenne $\bar{m}$ de la mixture.
+
+\subsection{Contraintes structurelles}
+
+Pour une composition chimique $\vec{X} = (X_i)_i$, il est clair que certaines combinaison des $x_\alpha$ ne sont pas admissibles.
+Il est nécessaire de satisfaire aux contraintes structurelles de la mixture qui, pour un mélange de $N$ éléments s'élèvent au nombre de $N+1$.
+Tout d'abord, il faut vérifier la \textbf{conservation du nombre de noyaux par élément}. 
+Pour chaque élément $i$,
+\begin{equation}
+	\label{eq:constraint_element}
+	\sum_r x_i^r = x_i,
+\end{equation}
+où $x_i$ est fixé par la composition macroscopique, $\vec{X}$.
+La dernière contrainte est l'\textbf{électroneutralité} de la mixture :
+\begin{equation}
+	\label{eq:constraint_neutrality}
+	x_e = \sum_{ir} r\,x_i^r \equiv \bar{r}.
+\end{equation}
+
+Une mixture soumise à ces contraintes sera dite \textit{admissible}.
+Une telle mixture vérifiera typiquement 
+\begin{equation}
+	\sum_\alpha x_\alpha = 1 + \dfrac{n_e}{n} = 1 + \bar{r}, 
+	\qquad \text{ou encore} \qquad
+	\bar{m} = \sum_i m_i \sum_r x_i^r = \sum_i m_i x_i,
+\end{equation}
+ce qui permet de retrouver l'expression standard de la masse moyenne.
+En pratique, on voit que ces contraintes sont linéaires en $\vec{x}_\star = (x_\alpha)_\alpha$, ce qui nous permettra de les écrire sous forme matricielle : 
+\begin{equation}
+	C \cdot \vec{x}_\star = \vec{p}(\vec{X}),
+\end{equation}
+où $C$ et $\vec{p}$ encodent les relations \eqref{eq:constraint_element}--\eqref{eq:constraint_neutrality}.
+\newpage
+
+\section{Énergie libre et équilibre chimique}
+\label{sec:free_energy}
+
+\subsection{Énergie libre et différentielle fondamentale}
+
+On notera $f$ l'énergie libre spécifique, fonction de $v\equiv 1/\rho$ (volume spécifique) et $T$ ainsi que d'une composition macroscopique, $\vec{X}=(X_i)_i$, tenue fixe lors des variations thermodynamiques.
+Dans ce cadre, la différentielle fondamentale de $f$ s'écrit :
+\begin{equation}
+	\label{eq:df_fundamental}
+	\mathrm{d}f = - s\,\mathrm{d}T - p\,\mathrm{d}v + \sum_i \mu_i\,\mathrm{d}X_i,
+\end{equation}
+où $s$ est l'entropie spécifique, $p$ la pression, et $\mu_i$ les potentiels chimiques associés aux variables de composition macroscopiques $X_i$.
+Lorsque la composition $\vec{X}$ est fixée, cette relation implique immédiatement~:
+\begin{equation}
+	\label{eq:p_s_from_f}
+	p = - \left(\frac{\partial f}{\partial v}\right)_{T,\vec{X}},
+	\qquad
+	s = - \left(\frac{\partial f}{\partial T}\right)_{v,\vec{X}}.
+\end{equation}
+
+\subsection{Potentiels thermodynamiques}
+
+La connaissance de $f(v,T,\vec{X})$ suffit à reconstruire l'ensemble des potentiels usuels via des transformations de Legendre.
+On introduit en particulier l'énergie interne $\varepsilon$, l'enthalpie $h$, et l'énergie libre de Gibbs $g$ :
+\begin{align}
+	\label{eq:legendre_potential_eps}
+	\varepsilon &\equiv f - T \left(\frac{\partial f}{\partial T}\right)_{v,\vec{X}} = f + Ts, \\
+	\label{eq:legendre_potential_g}
+	g &\equiv f - v \left(\frac{\partial f}{\partial v}\right)_{T,\vec{X}} = f + pv, \\
+	\label{eq:legendre_potential_h}
+	h &\equiv f - T \left(\frac{\partial f}{\partial T}\right)_{v,\vec{X}} - v \left(\frac{\partial f}{\partial v}\right)_{T,\vec{X}} = f + Ts + pv.
+\end{align}
+Dans la pratique, ces relations permettent de garantir une cohérence thermodynamique globale dès lors que $f$ est construit de manière consistante.
+La détermination de $f$ sera ainsi au cœur de notre modèle microphysique.
+
+\textbf{Note :} Par soucis de concision, on ne prendra plus la peine de préciser les variables gardées constantes lors d'une dérivation partielle s'il s'agit des autres dépendances explicites de la fonction.
+
+
+\subsection{\textit{Chemical \& Physical pictures}}
+
+
+Par contraste avec le cadre présenté dans les deux paragraphes précédents, l'approche adoptée dans ce document correspond à ce qui est appelé classiquement la \textit{chemical picture} (par opposition à la \textit{physical picture}, utilisée plus haut), où les toutes les espèces (états d'ionisation compris), $\{x_\alpha \}$, sont variables d'état. 
+On aura dans ce cas une énergie libre \textit{chimique}, définie comme :
+\begin{equation}
+	f_\star = f_\star(v, T, \vec{x}_\star),
+\end{equation}
+distincte de l'énergie libre \textit{physique}, $f(v, T, \vec{X})$ présentée plus haut.
+
+Le lien entre ces deux grandeurs est subtil : pour des variables d'états physiques $(v, T, \vec{X})$ données, $f(v, T, \vec{X})$ est la valeur minimale de $f_\star(v, T, \vec{x}_\star)$ pour une mixture $\vec{x}_\star$ \textit{admissible}.
+Mis sous la forme d'un problème de minimisation contrainte en introduisant le Lagrangien du système
+\begin{equation}
+	\label{eq:lagrangian}
+	\mathcal{L}(\vec{x}_\star, \vec{\lambda}; v, T, \vec{X}) \equiv f_\star(v, T, \vec{x}_\star) + \vec{\lambda} \cdot (C \cdot \vec{x}_\star - \vec{p}(\vec{X})),
+\end{equation}
+on aura alors :
+\begin{equation}
+	\label{eq:physical_chemical}
+	f(v, T, \vec{X}) = \underset{\vec{x}_\star, \vec{\lambda}}{\mathrm{min}} ~ \mathcal{L}(\vec{x}_\star, \vec{\lambda}; v, T, \vec{X}).
+\end{equation}
+
+\subsection{Équilibre chimique}
+
+En plus de fournir le lien entre les énergies libres physique et chimique, L'Eq.~\eqref{eq:physical_chemical} a de très nombreuses retombées sur notre modèle thermodynamique.
+La minimisation contrainte de l'énergie libre chimique fixe implicitement une relation 
+\begin{equation}
+	\label{eq:chemical_equilibrium}
+	\vec{x}_\star = \vec{x}_\star(v, T, \vec{X}),
+\end{equation}
+que l'on appellera \textit{équilibre chimique}, central dans notre modèle puisqu'il fixe l'équilibre d'ionisation pour des conditions physiques imposées.
+
+On pourra chercher à en obtenir une écriture explicite en remarquant que $\dv_{x_\star} \mathcal{L} = \vec{0}$ à l'équilibre chimique.
+À l'aide de l'Eq.~\eqref{eq:lagrangian}, on a ainsi :
+\begin{equation}
+	\vec{\mu}_\star = - \vec{\lambda} \cdot C
+\end{equation}
+en introduisant les potentiels chimiques spécifiques $\mu_\alpha = \partial_\alpha f_\star$.
+En revenant aux contraintes structurelles \eqref{eq:constraint_element}-\eqref{eq:constraint_neutrality}, on voit que la matrice $C$ s'écrit simplement comme :
+\[
+	C = 
+	\begin{pNiceArray}{ccc|c}[margin]
+	  \bm{1} &&& \Block{3-1}<\large>{\vec{0}}\\
+	  &\ddots && \\
+	  && \bm{1} & \\
+	  \hline
+	  \Block{1-3}<\large>{\vec{r}} &&& -1
+	\end{pNiceArray},
+\]
+avec $\bm{1}$ un bloc de $1$ pour l'ensemble des $r$ correspondant au même élément, ce qui donne :
+\begin{equation}
+	\mu_i^r = -\lambda_i - r \lambda_e, 
+	\quad \text{et} \quad
+	\mu_e = \lambda_e.
+\end{equation}
+En remarquant que $\mu_i^r - \mu_i^{r-1} = -\lambda_e$, on retrouve l'équilibre d'ionisation :
+\begin{equation}
+	\label{eq:ionisation_equilibrium}
+	\mu_i^{r-1} = \mu_i^r + \mu_e
+\end{equation}
+associé à la réaction $i^{r-1} \rightleftharpoons i^r + \e$.
+
+\subsection{Dérivées totales et contributions indirectes}
+
+La relation \eqref{eq:physical_chemical} implique a priori que toute dérivée de $f$ par rapport à $v$ ou $T$
+contient des contributions indirectes via la dépendance implicite \eqref{eq:chemical_equilibrium} puisque :
+\begin{equation}
+	f(v, T, \vec{X}) = f_\star(v, T, \vec{x}_\star(v, T, \vec{X}))
+\end{equation}
+ce qui complexifie le calcul des potentiels thermodynamiques.
+Par exemple,
+\begin{equation}
+	\label{eq:chain_rule_naive}
+	-p = \d_v f = \left(\frac{\partial f_{\star}}{\partial v}\right)_{T,\vec{X}} = \d_v f_\star + \vec{\mu}_{\star} \cdot \d_v \vec{x}_\star.
+\end{equation}
+Ici le second terme constitue ce que l'on appelle une \textit{contribution indirecte}.
+Notons cependant que celle-ci s'annule si l'équilibre chimique est \textit{exactement} satisfait.
+En effet, on a vu dans un tel cas que $\vec{\mu}_\star = - \vec{\lambda} \cdot C$, soit :
+\begin{equation}
+	\vec{\mu}_{\star} \cdot \d_v \vec{x}_\star = - \vec{\lambda} \cdot \d_v (C \cdot \vec{x}_\star).
+\end{equation}
+
+Or, les contraintes structurelles requièrent que $C \cdot \vec{x}_\star = \vec{p}(\vec{X})$, ce qui rend ce terme indépendant de $v$ (notons que cet argument s'étend naturellement à la dépendance en $T$).
+À l'équilibre chimique, on aura donc : 
+\begin{equation}
+	p = - \d_v f = -  \d_v f_\star, 
+	\quad
+	s = - \d_T f = -  \d_T f_\star.
+\end{equation}
+
+Notons cependant que si $\vec{x}_{\star}$ devait différer de l'équilibre chimique, des contributions indirectes s'ajouteraient aux calculs des pression et entropie à partir de $f_{\star}$ comme on le verra par la suite.
+\newpage
+
+\section{Équilibre d'ionisation}
+\label{sec:ionisation_equilibrium}
+
+Pour retrouver $f(v, T, \vec{X})$, et toutes les grandeurs qui en dérivent, il sera dans un premier temps nécessaire de donner les solutions de l'équilibre chimique $\vec{x}_{\star}(v, T, \vec{X})$.
+On s’attellera ici à la recherche d'une forme de l'équilibre d'ionisation \eqref{eq:ionisation_equilibrium}, avant d'en chercher des solutions approximées.
+
+\subsection{Forme explicite de l'énergie libre}
+
+Point que l'on a éludé jusqu'ici : il n'est généralement pas possible de donner une forme close de $f_\star$, même en fonction de $\vec{x}_{\star}$.
+Une telle forme nécessiterait la connaissance complète de tous les mécanismes d’interaction entre chaque espèce, ce qui n'est pas notre cas.
+Pour cette raison, $f_{\star}$ est généralement donné sous la forme d'un développement en série, les termes nécessitant l'interaction simultané de nombreuses espèces n'apparaissant qu'en augmentant la densité.
+
+Dans la pratique, on décomposera $f_{\star}$ en une contribution dite \textit{idéale}, provenant d'un plasma sans aucune interaction entre ces composants, et une correction provenant l'énergie libre partagée :
+\begin{equation}
+	\label{eq:free_energy_general}
+	f_{\star}(v, T, \vec{x}_\star) = \dfrac{kT}{\bar{m}} \sum_{\alpha} x_\alpha \left [\ln \left (\dfrac{n_\alpha \lambda_\alpha^3}{\mathcal{Z}_{\alpha}} \right ) - 1\right ] + \delta f_{\star}(v, T, \vec{x}_\star)
+\end{equation}
+avec $\lambda_\alpha$ la longueur d'onde thermique de l'espèce $\alpha$, 
+\[
+	\lambda_\alpha^2 = \dfrac{h^2}{2 \pi m_\alpha k T},
+\]
+et $\mathcal{Z}_{\alpha}$ sa fonction de partition interne.
+De façon importante, si les interactions \textit{inter-particules} sont prises en compte dans $\delta f_{\star}$, les interactions \textit{intra-particule} figurent quand à elles dans la fonction de partition $\mathcal{Z}_{\alpha}$ et donc dans la partie idéale de l'énergie libre.
+Pour un électron, on comptera ces deux niveaux de spins (dont l'on supposera la différence d'énergie négligeable à notre échelle) : 
+\begin{equation}
+	\mathcal{Z}_e = 2.
+\end{equation}
+Pour un atome $i$, ionisé $r$ fois, on comptera chacun des états de sa structure fine, là encore supposés dégénérés en énergie (de dégénérescence $g_i^r$), mais dont l'énergie de référence à été située au niveau de l'atome neutre $i^0$  : 
+\begin{equation}
+	\label{eq:partition_function}
+	\mathcal{Z}_i^r = g_i^r \exp \left ( - \sum_{s=1}^r \dfrac{\chi_i^s}{kT} \right ),
+\end{equation} avec $\chi_i^r$ l'énergie de passage de l'état $(i, r-1) \rightarrow (i, r)$.
+
+\subsection{Potentiels chimiques et équation de Saha}
+
+À partir de l'énergie libre chimique donnée plus haut, on aura simplement :
+\begin{equation}
+	\label{eq:chemical_potential}
+	\mu_\alpha = \d_{\alpha} f_{\star} = \dfrac{kT}{\bar{m}} \ln \left (\dfrac{n_\alpha \lambda_\alpha^3}{\mathcal{Z}_{\alpha}} \right ) + \d_{\alpha}\delta f_{\star}.
+\end{equation}
+Notons ici que l'on n'a pas dérivé $\bar{m}$ suivant $x_\alpha$, bien que cette moyenne en dépende.
+Sous la contrainte structurelle \eqref{eq:constraint_element} cependant, changer la valeur de $x_\alpha$ est nécessairement compensé par une variation inverse des autres abondances, ce qui laisse $\bar{m}$ invariant.
+Par la suite, on se placera systématiquement sous la contrainte $C \cdot \vec{x}_{\star} = \vec{p}$ pour prendre chacune de nos dérivées, bien que l'on n'en fasse pas explicitement mention.
+On montre dans l'Annexe~\ref{app:contrainte} que le calcul de telles dérivées, linéairement contraintes, revient à prendre des dérivées ``classiques'' et à appliquer la contrainte à posteriori.
+
+Avec l'expression \eqref{eq:chemical_potential} pour les potentiels chimiques, l'équilibre d'ionisation \eqref{eq:ionisation_equilibrium} sera ainsi donné par : 
+\begin{equation}
+	\label{eq:Saha_general}
+	\dfrac{x_i^r}{x_i^{r-1}} = \dfrac{\mathcal{Z}_i^r}{\mathcal{Z}_i^{r-1}} \exp \big (- \eta - \delta \eta_{(ir)} \big ),
+\end{equation}
+où l'on a introduit la dégénérescence électronique idéale 
+\begin{equation}
+	\label{eq:degeneracy}
+	\eta = \ln \left ( \dfrac{n_e \lambda_e^3}{\mathcal{Z}_e} \right )
+\end{equation}
+ainsi que sa correction dans le sens de l'avancement de la réaction d'ionisation :
+\begin{equation}
+	\label{eq:delta_degeneracy}
+	\delta \eta_{(ir)} = \dfrac{\bar{m}}{kT} \d_{(ir)} \delta f_{\star}, 
+	\qquad 
+	\d_{(ir)} = \d_i^r + \d_e - \d_i^{r-1}.
+\end{equation}
+
+L'équation \eqref{eq:Saha_general} permet une distinction claire des différentes contributions : le ratio $\mathcal{Z}_i^r / \mathcal{Z}_i^{r-1}$ traduit un équilibre interne des énergies, le facteur $\eta$ fait apparaître les interactions idéales avec les électrons, tandis que la correction $\delta \eta_{(ir)}$ fait intervenir les contributions non-idéales des interactions entre espèces (correction de Debye, distribution de Fermi-Dirac, pression d'échange, ...).
+Pour un gaz idéal, $\delta f_{\star} \rightarrow 0$, et l'on retrouve bien les équations de Saha; il suffira pour ça d'expliciter le rapport des fonctions de partitions à l'aide de la définition \eqref{eq:partition_function}.
+
+\subsection{Approximation de la solution}
+
+Le couplage entre les équations \eqref{eq:Saha_general} fait qu'il n'est pas possible d'en donner une solution analytique.
+Pour éviter une résolution numérique, on effectuera un ensemble d'hypothèses permettant de faire disparaître ce couplage.
+Une première hypothèse pour réduire les couplages internes à un même élément $i$ est de supposer qu'il ne peut y avoir plus de deux états d'ionisation simultanées pour cet élément.
+Plus précisément, on supposera que :
+\begin{equation}
+	\label{eq:hyp1}
+	\forall(v, T, \vec{X}), ~\exists r,  ~ x_i^{r-1} + x_i^r = x_i.
+\end{equation}
+
+Introduisons maintenant la fraction d'ionisation cumulée :
+\begin{equation}
+	y_i^r = \dfrac{1}{x_i}\sum_{s \geq r} x_i^s, 
+	\quad \Rightarrow \quad
+	x_i^r = x_i (y_i^r - y_i^{r+1}).
+\end{equation}
+D'après l'hypothèse \eqref{eq:hyp1}, on aura
+\[
+	\forall(v, T, \vec{X}), ~\exists r, 
+	~y_i^{r-1} = 1, 
+	\quad y_i^r \neq 0, 
+	\quad y_i^{r+1} = 0,
+\]
+et donc un équilibre d'ionisation qui s'écrit (pour la seule réaction en cours pour $i$) :
+\begin{equation}
+	\dfrac{y_i^r}{1 - y_i^r} = \dfrac{\mathcal{Z}_i^r}{\mathcal{Z}_i^{r-1}} \exp \big (- \eta - \delta \eta_{(ir)} \big ).
+\end{equation}
+
+Cette équation reste cependant impossible à résoudre analytiquement, dans le cas général, puisque les champs $\eta$ et $\delta \eta_{(ir)}$ continuent de coupler les espèces entre elles en faisant intervenir des grandeurs moyennes au plasma.
+Ces moyennes $\langle a \rangle$ s'écrivent en fonction de $y_i^r$ comme :
+\begin{equation}
+	\langle a \rangle = \sum_{ir} a_i^r \, x_i^r = \sum_{ir} x_i a_i^r (y_i^r - y_i^{r+1}) = \sum_{ir} x_i (a_i^r - a_i^{r-1}) y_i^r, 
+	\qquad (a_i^{-1} = 0)
+\end{equation}
+ce qui donne par exemple : 
+\begin{equation}
+	\langle r \rangle = \sum_{ir} r x_i^r = \sum_{ir} x_i y_i^r.
+\end{equation}
+Ainsi, même si un seul $y_i^r$ est pertinent à la fois pour l'élément $i$, ces moyennes continuent de coupler les équations en via leur somme sur $i$.
+
+\subsubsection{Approximation pour $i \geq 2$}
+
+Dans un plasma typique, les électrons libres sont en grande partie fournis par l'hydrogène qui est, de plus, l'élément avec le potentiel d'ionisation le plus faible.
+On fera donc l'approximation suivante : on supposera (i) que l'hydrogène s'ionise complètement avant tous les autres éléments et (ii) que, lors du calcul d'une grandeur moyenne, les éléments restants peuvent être approximés par un état d'ionisation moyenne $y_i^r \simeq 1/2$.
+Ainsi, lorsque l'on résout l'équilibre d'ionisation d'un élément $i\ge 2$,
+la quantité $\bar r$ qui intervient dans $\eta$ (et, le cas échéant, les quantités entrant dans $\delta \eta_{(ir)}$) sera supposée fixée par l'état global du plasma et indépendante du degré d'ionisation de cet élément.
+Cette hypothèse a pour effet de découpler l'équation de Saha associée à la réaction active de l'élément $i$ de celle des autres éléments (et nous permettra de garder implicite les indices $(i, r)$ associés à cette réaction par la suite).
+On aura, par exemple : 
+\begin{equation}
+	\bar{r} \simeq x_\text{H} + \frac12 \sum_{i > 1} i \, x_i = 1 + \frac12 \sum_{i > 2} (i - 2) x_i,
+\end{equation}
+ou l'on rappelle que les éléments sont indexés par leur numéro atomique $i = Z_i$.
+Remarquons que, dans une mixture typique,
+\[
+	0 \leq \sum_{i > 2} (i - 2) x_i \leq \sum_{i > 2} i x_i \leq \sum_{i > 2} A_i x_i = \left ( \dfrac{\bar{m}}{m_u} \right ) Z \sim 10^{-2}
+\]
+ce qui permet de s'assurer que l'approximation (utilisée par la suite) $\bar{r} \simeq 1$ est valide dans ce régime à quelques millièmes près.
+
+On définit ensuite le \emph{facteur d'ionisation} $\Psi(v,T, \vec{X})$ par
+\begin{equation}
+  \label{eq:Psi_ir}
+  \Psi(v,T, \vec{X})
+  \equiv
+  \ln G - \frac{\chi}{kT} - \eta(v,T, \vec{X}) - \delta \eta(v,T, \vec{X}), 
+\end{equation}
+avec $G_i^r = g_i^r / g_i^{r-1}$, de sorte que l'équation \eqref{eq:Saha_general} se réécrit simplement
+\begin{equation}
+  \label{eq:logistic_solution_ir}
+  \frac{y}{1-y}= e^{\Psi}
+  \qquad\Longrightarrow\qquad
+  y=\frac{1}{1+e^{-\Psi}}.
+\end{equation}
+
+\paragraph{Dérivées pour $i \geq 2$}
+Bien que ce ne soit pas strictement nécessaire à ce stade, il sera utile par la suite d'introduire la fonction
+\begin{equation}
+	\mathcal{S}(y, \Psi) = \ln y - \ln (1 - y) - \Psi,
+\end{equation}
+de façon à ce que l'équilibre d'ionisation s'écrive simplement $\mathcal{S}(y, \Psi) = 0$.
+La différentiation de cette équation suivant ses deux variables donnera : 
+\begin{equation}
+	\d_y \mathcal{S} = \dfrac{1}{y (1 - y)}
+	\qquad \text{et} \qquad
+	\d_\Psi \mathcal{S} = - 1.
+\end{equation}
+Or, puisque $\dfrac{dy}{d\Psi} = \d_\Psi y |_\mathcal{S}$, on pourra réécrire (en utilisant les propriétés des matrices jacobiennes) :
+\begin{equation}
+	\d_\Psi y 
+	= \left | \dfrac{\d(y, \mathcal{S})}{\d(\Psi, \mathcal{S})} \right |
+	= \left | \dfrac{\d(y, \mathcal{S})}{\d(y, \Psi)} \right | 
+	\left | \dfrac{\d(y, \Psi)}{\d(\Psi, \mathcal{S})} \right |
+	= - \dfrac{\d_\Psi \mathcal{S}}{\d_y \mathcal{S}} = y(1 - y).
+\end{equation}
+
+Cette expression permettra facilement de récupérer les dérivées de la fractions cumulée suivant $v$ et $T$ en remarquant que : 
+\begin{equation}
+  \label{eq:dy_dlnv_dlnT}
+  dy
+  = y(1-y) \, d \Psi
+\end{equation}
+avec 
+\begin{align}
+  \label{eq:dPsi_dlnv}
+  \frac{\d \Psi}{\partial \ln v}
+  &=
+  1 - \frac{\partial \delta \eta}{\partial \ln v}
+  \\
+  \label{eq:dPsi_dlnT}
+  \frac{\d \Psi}{\partial \ln T}
+  &=
+  \left(\frac{3}{2}+\frac{\chi}{kT}\right)
+  -\frac{\partial \delta \eta}{\partial \ln T}.
+\end{align}
+
+\subsubsection{Approximation pour l'Hydrogène}
+
+Compte tenu de ce que l'on a dit plus haut, un tel raisonnement ne tient plus dans le cas de l'hydrogène, puisque les moyennes globales dépendent maintenant de $y$. En effet, on aura $\langle a \rangle \simeq  a x y \simeq a y$ \footnote{
+	notons ici que $a$ et $x$ désigne le terme associé à l'ionisation courante, \ie respectivement $a_\text{H}^1$ et $x_{\text{H}}$.
+} et donc par exemple
+\begin{equation}
+	\langle r \rangle \simeq y.
+\end{equation}
+Notons que cette même approximation tient généralement pour $\langle r^n \rangle$.
+Ainsi, on pourra remarquer que 
+\begin{equation}
+	\eta = \ln \left (\dfrac{n \lambda_e^3}{\mathcal{Z}_e} \right ) + \ln \bar{r} \simeq \eta_0 + \ln y,
+\end{equation}
+avec $\eta_0(v, T)$ l'approximation utilisée pour $i \geq 2$.
+La dépendance de $\delta \eta$ en $y$, elle, ne peut être connue sans donner une forme explicite à $\delta f_{\star}$.
+De manière générale, l'analogue de l'équation \eqref{eq:logistic_solution_ir} pour l'hydrogène prendra la forme :
+\begin{equation}
+	\label{eq:general_H}
+	\dfrac{y^2}{1 - y} \, e^{-\delta \Psi} = e^\Psi, 
+	\qquad 
+	\delta \Psi(y) = \delta \eta(1) - \delta \eta (y),
+\end{equation}
+le facteur $\Psi(v, T)$ étant défini de la même façon que pour $i \geq 2$ (\cf \eqref{eq:Psi_ir}).
+Celle-ci ne possède généralement pas de solution analytique pour $y$.
+
+\paragraph{Correction de Debye}
+
+On prendra ici l'exemple concret de la correction de Debye.
+L'effet d'écrantage est connu pour ajouter un terme à l'énergie libre : 
+\begin{equation}
+	\label{eq:free_energy_Debye}
+	\delta f_{\star}(v, T, \vec{x}_\star) = \dfrac{kT}{\bar{m}}(12 \pi n D^3)^{-1}
+\end{equation} avec $D$ la longueur de Debye.
+Cette longueur est généralement exprimée comme : 
+\begin{equation}
+	D_0^2 = \dfrac{kT}{4 \pi n e^2 \langle r^2 \rangle}.
+\end{equation}
+On constatera cependant facilement que cette longueur se comporte mal dès lors que l'on se place dans un milieu dense et froid, où $D_0 \rightarrow 0$ (et donc $\delta f_\star \rightarrow \infty$), ce qui traduit les limites du modèle de Debye pour des plasmas dans ces conditions.
+Il est courant de chercher à régulariser cette longueur de façon à ce qu'elle ne puisse descendre en deçà d'un minimum, sous lequel elle perd de toute façon sa signification physique.
+Un minimum pertinent réside dans la longueur, $a$, associé au volume moyen occupé par un noyau et définie par : 
+\begin{equation}
+	a^3 = \dfrac{3}{4 \pi n}.
+\end{equation}
+En deçà de $a$, on ne trouve en moyenne qu'un seul noyau et la distinction entre interaction inter et intra-espèce se floute.
+Compte tenu de l'expression de $\delta f_{\star}$, un moyen simple d'assurer que $D$ ne passera jamais en dessous de $a$ est de poser : 
+\begin{equation}
+	D^3 = a^3 + D_0^3,
+\end{equation}
+ce qui donne : 
+\begin{equation}
+	\delta f_{\star} = \dfrac{kT}{9\bar{m}} \, \dfrac{\Lambda}{1 + \Lambda},
+\end{equation}
+avec le \textit{facteur de Debye} :
+\begin{equation}
+	\Lambda = \left ( \dfrac{a}{D_0} \right )^3
+\end{equation}
+En pratique, $\Lambda$ mesure à la fois la pertinence du modèle de Debye et sa prise en compte dans le calcul de $\delta f_{\star}$. 
+Lorsque $\Lambda \ll 1$, ce modèle est utile et $\delta f_{\star}$ reste proche de sa valeur non régularisée (\ie en remplaçant $\Lambda / (1 + \Lambda)$ par $\Lambda$).
+À l'inverse plus $\Lambda$ s'approche de $1$ (voire, le dépasse), moins le modèle d'écrantage devient pertinent et plus $\delta f_{\star}$ s'écarte de la valeur théoriquement prédite par ce modèle.
+
+Notons qu'il sera utile par la suite d'introduire la fonction $\mathcal{D}_n(\Lambda)$ définie comme la n-ième dérivée logarithmique de la fonction $\Lambda / (1 + \Lambda)$ : 
+\begin{equation}
+	\mathcal{D}_n(\Lambda) = {\d_{\ln \Lambda}}^n \left (\dfrac{\Lambda}{1 + \Lambda} \right ).
+\end{equation}
+On donnera les premières valeurs de $\mathcal{D}_n$ à titre d'exemple : 
+\begin{equation}	
+	\mathcal{D}_0(\Lambda) = \dfrac{\Lambda}{1 + \Lambda},
+	\qquad
+	\mathcal{D}_1(\Lambda) = \dfrac{\Lambda}{(1 + \Lambda)^2},
+	\qquad
+	\mathcal{D}_2(\Lambda) = \dfrac{\Lambda (1 - \Lambda)}{(1 + \Lambda)^3}, 
+	\qquad
+	\mathcal{D}_3(\Lambda) =\dfrac{\Lambda(1 - 4 \Lambda + \Lambda^2)}{(1 + \Lambda)^4}
+\end{equation}
+
+Pour mesurer l'impact d'une telle modélisation, on calculera de façon consistante $\delta \eta_{(ir)}$ à partir de $\delta f_{\star}$ (\cf Eq.~\eqref{eq:delta_degeneracy}) en remarquant que $\Lambda \propto \langle r^2 \rangle^{3/2}$ :
+\begin{equation}
+\delta \eta_{(ir)} = \dfrac{1}{9}\d_{(ir)} \mathcal{D}_0(\Lambda) = \dfrac{1}{6} \mathcal{D}_1(\Lambda) \d_{(ir)} \ln \langle r^2 \rangle = \dfrac{2r - 1}{6 \langle r^2 \rangle} \mathcal{D}_1(\Lambda).
+\end{equation}
+
+De manière générale, $\delta \eta_{(ir)}$ est fonction de $\vec{x}_{\star}$ (et donc de $y$ dans le cas de l'hydrogène) au travers de sa dépendance en $\langle r^2 \rangle$, laquelle engendre l'apparition d'un $\delta \Psi(y) \neq 0$ dans l'équation \eqref{eq:general_H}.
+Notons cependant que la dépendance de cette relation en $y$ est faible.
+En effet, en notant $\Lambda_0$ la valeur de $\Lambda$ utilisée pour $i \geq 2$ (\ie avec $\langle r^2 \rangle \simeq 1$) :
+\begin{equation}
+	e^{- \delta \Psi(0)} =  \exp \left ( - \dfrac{\mathcal{D}_1(\Lambda_0)}{6} \right ),
+\end{equation}
+et ainsi la contrainte $\Lambda_0 > 0$ fournit les bornes resserrées :
+\begin{equation}
+	 \dfrac{23}{24} < e^{-1/24} \leq e^{-\delta \Psi} \leq 1.
+\end{equation}
+Ainsi l'approximation $e^{-\delta \Psi} \simeq 1$ reste très pertinente (et particulièrement lorsque $ \Lambda \ll 1$), ce qui nous permettra de
+négliger la dépendance de $\Lambda$ en $\langle r^2 \rangle$ et ainsi de considérer systématiquement l'expression $\Lambda_0$ à la place.
+On trouvera alors la solution analytique qui suit pour l'hydrogène :
+\begin{equation}
+	\label{eq:quadratic_solution_H}
+	\dfrac{y^2}{1 - y} = e^\Psi, 
+	\qquad \Rightarrow \qquad 
+	y = \dfrac{2}{1 + \sqrt{1 + 4 e^{-\Psi}}}
+\end{equation}
+
+\paragraph{Dérivées pour l'hydrogène}
+À la différence des autres éléments, la fonction $\mathcal{S}$ s'écrit ici : 
+\begin{equation}
+	\mathcal{S}(y, \Psi) = 2 \ln y - \ln (1 - y) - \Psi,
+\end{equation}
+ce qui donne :
+\begin{equation}
+	\d_y \mathcal{S} = \dfrac{2 - y}{y (1 - y)}, 
+	\qquad \text{et} \qquad
+	\d_{\Psi} \mathcal{S} = - 1.
+\end{equation}
+
+Ainsi, de façon strictement analogue à ce qui a été fait plus haut, on écrira
+\begin{equation}
+  \label{eq:dyH_dlnv_dlnT}
+  dy = \dfrac{y(1 - y)}{2 - y}\, d\Psi.
+\end{equation}
+Les dérivées du facteur d'ionisation peuvent être rendues complètement explicites dans le cas de la correction de Debye en notant que
+\begin{equation}
+	d \delta \eta_{(ir)} = \dfrac{2r - 1}{6} \mathcal{D}_{2}(\Lambda_0) d \ln \Lambda_0
+\end{equation}
+et ainsi : 
+\begin{align}
+  \label{eq:dPsi_dlnv}
+  \frac{\d \Psi}{\d \ln v}
+  &=
+  1 + \dfrac{2r - 1}{12} \mathcal{D}_{2}(\Lambda_0),
+  \\
+  \label{eq:dPsi_dlnT}
+  \frac{\d \Psi}{\d \ln T}
+  &=
+  \left(\frac{3}{2}+\frac{\chi}{kT}\right)
+  + \dfrac{2r - 1}{4} \mathcal{D}_{2}(\Lambda_0).
+\end{align}
+
+
+\newpage 
+
+\section{Potentiels thermodynamiques}
+
+\subsection{Énergie libre exacte}
+
+On donnera ici l'expression explicite de $f_{\star}$ en supposant les $\vec{x}_{\star}$ (ou $\vec{y}_{\star}$) et leurs dérivées connus via les approximations données plus haut.
+En repartant de l'expression \eqref{eq:free_energy_general}, en choisissant la correction comme étant celle de Debye \eqref{eq:free_energy_Debye}, on écrira pour l'énergie libre adimensionnée $F_{\star} = \bar{m} f_{\star} / kT$ :
+\begin{equation}
+	F_{\star} = - \left (1 + \sum_{ir} x_i y_i^r \right ) + \sum_{ir} x_i \left [ \ln \left ( \dfrac{x_i^r}{x_i^{r-1}} \right ) - \ln G_i^r + \dfrac{\chi_i^r}{kT} + \eta \right ]y_i^r + \dfrac{\mathcal{D}_{0}(\Lambda)}{9}
+\end{equation}
+
+Notons qu'il ne manque qu'un seul terme dans l'expression entre crochets pour faire apparaître l'équation de Saha $\mathcal{S}_i^r = 0$ :
+\begin{equation}
+	\sum_{ir} x_i  \delta \eta_{(ir)} y_i^r = \dfrac{\mathcal{D}_1(\Lambda)}{6 \langle r^2 \rangle} \sum_{ir} x_i  (2r - 1) y_i^r = \dfrac{\mathcal{D}_1(\Lambda)}{6},
+\end{equation}
+ce qui nous permettra de réagencer les termes comme :
+\begin{equation}
+	F_{\star} = - \left (1 + \sum_{ir} x_i y_i^r \right ) + \sum_{ir} x_i \mathcal{S}_i^r y_i^r + \dfrac{\mathcal{D}_{0}(\Lambda)}{9} - \dfrac{\mathcal{D}_{1}(\Lambda)}{6}.
+\end{equation}
+
+Lors d'une résolution exacte de l'équation de Saha, $\mathcal{S}_i^r = 0$, et le second terme disparaît. 
+Ce n'est pas le cas lors d'une résolution analytique et, s'il est vraisemblable que $\mathcal{S}_i^r \simeq 0$, il serait inconsistent de considérer l'égalité stricte.
+Cependant, conserver ce terme additionnel est très lourd pour le calcul des dérivées et dérivées secondes de l'énergie libre.
+
+
+\subsection{Énergie libre approximée}
+\label{sec:approx_free_energy}
+
+Pour contourner cette difficulté, on fera un choix différent : plutôt que de donner une énergie libre exacte dont l'équilibre d'ionisation assiocié ne peut être qu'approximé (causant donc l'apparition de contribution indirecte), on cherchera l'énergie libre approximée dont l'on sait résoudre exactement l'équilibre d'ionisation.
+L’objectif de ce paragraphe est ainsi de construire une énergie libre effective dont la minimisation reproduit \emph{exactement} les équations de Saha du modèle \emph{fermé} adopté en Section~\ref{sec:ionisation_equilibrium} (i.e.\ après les approximations de découplage utilisées pour traiter les grandeurs moyennées intervenant dans $\eta$ et dans les corrections non-idéales).
+
+Dans ce but, pour chaque réaction active $(i,r)$, le facteur d'ionisation
+\begin{equation}
+  \label{eq:def_Psi_ir_effective}
+  \Psi_i^r(v,T,\vec X)
+  \equiv
+  \ln G_i^r - \frac{\chi_i^r}{kT} - \eta_0(v,T,\vec X) - \delta\eta_{(ir)}(v,T,\vec X)
+\end{equation}
+sera traité comme un champ donné pour $(v,T,\vec X)$ fixés,
+avec 
+\begin{equation}
+	\eta_0(v, T, \vec{X}) = \ln \left (\dfrac{n \lambda_e^3}{\mathcal{Z}_e} \right ), 
+	\qquad
+	\delta \eta_{(ir)}(v, T, \vec{X}) = \dfrac{(2r - 1)}{6} \mathcal{D}_1(\Lambda_0), 
+	\qquad
+	\Lambda_0(v, T, \vec{X}) = \dfrac{3e^3 \sqrt{4 \pi n}}{(kT)^{3/2}}.
+\end{equation}
+Autrement dit, toute dépendance résiduelle en $\vec y_\star$ (via $\bar r$, $\langle r^2\rangle$, etc.) est soit déplacé (ex: la dépendance de $\eta$ en $y_{\text H}$, déplacée hors de $\Psi_{\text H}$), soit remplacée par une approximation explicite (ex: $\langle r^2 \rangle \simeq 1$ dans $\Lambda$), de sorte que l’on n’a pas $\partial_{y}\Psi_i^r\neq 0$ dans le problème variationnel présenté plus bas.
+
+Ce point clarifié, on définit une énergie libre adimensionnée effective $F_\star$ (fonction de $\vec y_\star$ à $\vec X$ fixé) par
+\begin{equation}
+  \label{eq:effective_Fstar}
+  F_\star(v,T,\vec y_\star;\vec X)
+  \equiv
+  \sum_{ir} x_i\,\Phi_i \big(y_i^r,\Psi_i^r(v,T,\vec X)\big)
+  +
+  F_0(v,T,\vec X),
+\end{equation}
+où $F_0$ ne dépend pas de $\vec y_\star$ et où les énergies libres partielles, $\Phi_i^r$, sont choisies de manière à satisfaire, pour tout $i$,
+\begin{equation}
+  \label{eq:Phi_derivative_equals_S}
+  \d_y \Phi_i (y,\Psi)=\mathcal S_i(y,\Psi).
+\end{equation}
+Ici $\mathcal S_i(y_i^r,\Psi_i^r)=0$ désigne l’écriture fermée de l’équation de Saha associée à la réaction active $(i,r)$ 
+\[
+	\mathcal{S}_i(y, \Psi) = k_i \ln y - \ln (1 - y) - \Psi,
+	\qquad k_i \in \{1, 2\}
+\]
+La primitive s'obtient facilement : 
+\begin{equation}
+	\begin{split}
+		\Phi_i(y, \Psi) 
+		&= y \big ( k_i \ln y - \ln (1 - y) - k_i + 1 \big) + \ln (1 - y) - \Psi y, \\
+		&= y \Big ( \mathcal{S}_i(y, \Psi) - k_i + 1 \Big) + \ln (1 - y)
+	\end{split}
+\end{equation}
+en notant que toute constante de $y$ pourra être intégré à $F_0$.
+Enfin, sous l’hypothèse de fermeture précédente (i.e.\ $\Psi_i^r$ indépendant de $\vec y_\star$), on a immédiatement
+\begin{equation}
+  \label{eq:grad_Fstar_equals_S}
+  \d_i^r F_\star = x_i\,\mathcal S_i^r(y_i^r,\Psi_i^r).
+\end{equation}
+Ainsi,
+\begin{equation}
+  \label{eq:minimisation_equiv_Saha}
+  \dv_{y_\star}F_\star=\vec 0
+  \qquad\Longleftrightarrow\qquad
+  \vec{\mathcal S}_\star=\vec 0,
+\end{equation}
+et minimiser $F_\star$ par rapport à $\vec y_\star$ revient à résoudre \emph{exactement}
+les équations de Saha \emph{du modèle fermé}.
+Puisque les $y_i^r(v, T, \vec{X})$ définis dans la section~\ref{sec:ionisation_equilibrium} sont les solutions exactes de ces équations, on sera ainsi assurés que, par exemple :
+\begin{equation}
+	- p = \d_v f = \d_v f_{\star} + \d_v \vec{y}_{\star} \cdot \dv_{y_{\star}} f_{\star} = \d_{v} f_{\star},
+\end{equation}
+avec l'énergie libre physique approximée :
+\begin{equation}
+	f(v, T, \vec{X}) = \underset{\vec{y}_{\star}}{\text{stat}} ~ f_{\star} (\vec{y}_{\star}; v, T, \vec{X}).
+\end{equation}
+
+\subsection{Potentiels dérivés}
+
+Sous cette contrainte de stationnarité, on aura simplement :
+\begin{equation}
+	\Phi_i(y) = (1 - k_i) y + \ln(1 - y),
+\end{equation}
+ce qui donne pour l'énergie libre physique approximée (adimensionnée)
+\begin{equation}
+	F(v, T, \vec{X}) = F_0(v, T, \vec{X}) - x_{\text H} y_{\text H} + \sum_{ir} x_i \ln (1 - y_i^r),
+\end{equation}
+avec la jauge $F_0$ qui sera déterminée de façon à récupérer les potentiels thermodynamiques idéaux dans les limites adéquates.
+Par la suite, on déterminera ces potentiels adimensionnés par $kT/\bar{m}$ à l'aide des dérivées de $F_{\star}$.
+Par exemple, pour le potentiel thermodynamique adimensionné :
+\[
+	\Omega = \left ( \dfrac{kT}{\bar{m}} \right )^{-1} \, pv,
+\]
+on aura simplement :
+\begin{equation}
+	\begin{split}
+		\Omega &= - \d_{\ln v} F_{\star} \\
+		&= - \d_{\ln v} F_0 + \sum_{ir} x_i y_i^r \left ( 1 - \d_{\ln v} \delta \eta_{(ir)} \right ) \\
+		&= - \d_{\ln v} F_0 + \sum_{ir} x_i y_i^r + \dfrac{1}{12} \mathcal{D}_{2}(\Lambda_0) \sum_{ir} x_i (2r-1) y_i^r.
+	\end{split}
+\end{equation}
+
+Notons que la première somme qui apparaît dans cette expression n'est autre que $\langle r \rangle$, et la seconde $\langle r^2 \rangle$.
+De façon cruciale, si l'on a supposé que $\langle r \rangle \simeq 1$ ou $y_{\text H}$, $\langle r^2 \rangle \simeq 1$ par endroit dans la section précédente pour retrouver une expression analytique des $y_i^r$, cette approximation n'est plus valide (ni même souhaitable) à ce stade; tous les calculs sont effectués exactement à partir du moment où l'on a redéfini l'énergie libre approximée.
+Enfin notons que l'on a classiquement :
+\[
+	\Omega \underset{\Lambda \rightarrow 0}{\longrightarrow} 1 + \langle r \rangle,
+\]
+ce qui nous permet de déduire la contrainte $\d_{\ln v} F_0 = -1$.
+Finalement, 
+\begin{equation}
+	\Omega(v, T, \vec{X}) = 1 + \langle r \rangle + \dfrac{\langle r^2 \rangle}{12} \mathcal{D}_{2}(\Lambda_0).
+\end{equation}
+
+Pour retrouver l'énergie interne adimensionnée $E$, on remarquera que :
+\begin{equation}
+	\varepsilon = f - \d_{\ln T} f = - T \d_{\ln T} \left ( \dfrac{f}{T} \right ),
+\end{equation}
+soit sous forme adimensionnée :
+\begin{equation}
+	\begin{split}
+		E &= - \d_{\ln T} F_{\star} \\
+		&= - \d_{\ln T} F_0 + \sum_{ir} x_i y_i^r \left ( \dfrac{3}{2} + \dfrac{\chi_i^r}{kT} - \d_{\ln T} \delta \eta_{(ir)} \right ) \\
+		&= - \d_{\ln T} F_0 + \dfrac{3}{2} \langle r \rangle + \dfrac{\langle \chi \rangle}{kT} + \dfrac{\langle r^2 \rangle}{4} \mathcal{D}_{2}(\Lambda_0),
+	\end{split}
+\end{equation}
+fournissant la nouvelle contrainte sur la jauge $\d_{\ln T} F_0 = - 3/2$.
+
+Notons qu'il sera possible de fournir le dernier potentiel ``de passage'' à partir de cette expression, lequel n'est autre que l'entropie adimensionnée : 
+\[
+	\Sigma = \left ( \dfrac{kT}{\bar{m}} \right )^{-1} \, Ts =  \left ( \dfrac{k}{\bar{m}} \right )^{-1} \, s.
+\]
+En effet, puisque $Ts = \varepsilon - f$ :
+\begin{equation}
+	\Sigma = \dfrac{3}{2} (1 + \langle r \rangle) + \dfrac{\langle \chi \rangle}{kT} + \dfrac{\langle r^2 \rangle}{4} \mathcal{D}_{2}(\Lambda_0) - F_0 + x_{\text H} y_{\text H} - \sum_{ir} x_i \ln (1 - y_i^r)
+\end{equation}
+
+Cette expression nous permet de fournir une forme plus précise de la jauge $F_0$.
+En effet, on peut chercher à récupérer la formule de Sackur-Tetrode dans la limite du gaz neutre idéal, auquel cas on a :
+\[
+	\Sigma \rightarrow \dfrac{3}{2} - F_0,
+\]
+ce qui nous permet l'identification
+\begin{equation}
+	\label{eq:free_energy_gauge}
+	F_0(v, T, \vec{X}) = \sum_i x_i \ln \left ( \dfrac{n_i \lambda_i^3}{\mathcal{Z}_i} \right ) - 1,
+\end{equation}
+avec $\mathcal{Z}_i = g_i^0$ la fonction de partition (dégénérée) du gaz neutre, dont le niveau d'énergie a été pris comme référence.
+
+Notons qu'à partir du moment où les deux potentiels de transition ont été définis, il est possible de retrouver les potentiels thermodynamiques restants à partir des relations \eqref{eq:legendre_potential_eps}-\eqref{eq:legendre_potential_h} : 
+\begin{equation}
+	E = F_{\star} + \Sigma, 
+	\qquad
+	G = F_{\star} + \Omega,
+	\qquad
+	H = F_{\star} + \Sigma + \Omega
+\end{equation}
+
+
+
+
+
+
+\newpage
+
+\appendix
+\section{Perturbation sous contrainte}
+\label{app:contrainte}
+
+\subsection{Présentation du problème}
+
+Considérons une grandeur $y$ fonction de $N+M$ variables d'états, regroupées dans un vecteur $\vec{x} \in \mathcal{M}$. 
+On s’intéressera ici à la restriction de cette grandeur sur une sous-variété $\mathcal{S}$, définie à partir d'une fonction de contrainte $\vec{f}:\mathcal{M}\to\mathbb{R}^M$, lisse, telle que : 
+\[
+	\mathcal{S}=\{\vec{x}\in \mathcal{M} ~|~ \vec{f}(\vec{x})= \vec{0}\}.
+\]
+Cette fonction fournit $M$ contraintes de façon à ce que $\mathrm{dim} (\mathcal{S}) = N$.
+
+La question que l'on se pose ici est de savoir si la restriction de $y$ à $\mathcal{S}$, que l'on notera $z$, se perturbe de la même façon que $y$ pour des mouvements restreints à $\mathcal{S}$ ou, en d'autre termes, est-ce qu'il est possible de faire commuter les opérations de restriction et de différentiation ?
+
+\subsection{Forme explicite de la restriction}
+
+Soit $\vec{x}_0\in\mathcal{S}$ un point régulier, au sens où la différentielle de $\vec{f}$ en ce point est de rang $M$. 
+Le théorème des fonctions implicites garantit alors l'existence
+d'un voisinage $\mathcal{U}\subset\mathcal{M}$ de $\vec{x}_0$ et d'un système de coordonnées locales
+dans lequel on peut écrire
+\[
+	\vec{x} \equiv (\vec{u},\vec{w}),\qquad \vec{u}\in\mathbb{R}^N,\;\vec{w}\in\mathbb{R}^M,
+\]
+et où la contrainte s'écrit donc
+\[
+	\vec{f}(\vec{u},\vec{w})=\vec{0},
+\]
+avec $\dv_w \vec{f}$ inversible.
+Dans ce cas, il existe une application lisse $\vec{\Phi}$ telle que, localement, $\vec{w}=\vec{\Phi}(\vec{u})$, et la sous-variété admissible est localement paramétrée par $\vec{u}$.
+La restriction de $y$ à $\mathcal{S}$ est alors simplement donnée par 
+\[
+	z(\vec{u})\equiv y(\vec{u},\vec{\Phi}(\vec{u})).
+\]
+
+\subsection{Variations admissibles}
+
+La restriction $\vec{f}(\vec{x})=\vec{0}$ impose, au premier ordre, que toute variation admissible
+$\delta\vec{x}\in T_{\vec{x}}\mathcal{M}$ vérifie
+\begin{equation}
+	\label{eq:tangent_condition}
+	\delta\vec{x} \cdot \dv_{x}\vec{f}(\vec{x})=\vec{0}.
+\end{equation}
+Dans les coordonnées $(\vec{u},\vec{w})$ présentées ci-dessus, une variation admissible est de la forme
+\[
+	\delta\vec{x}=(\delta\vec{u},\delta\vec{w})
+	\quad\text{avec}\quad
+	\delta\vec{w}=\delta\vec{u} \cdot \dv_u \vec{\Phi}(\vec{u}).
+\]
+La relation explicite entre $\dv_u \vec{\Phi}$ et la contrainte $\vec{f}$ peut être obtenue en dérivant $\vec{f}(\vec{u},\vec{\Phi}(\vec{u}))=\vec{0}$ :
+\begin{equation}
+	\label{eq:dphi_formula}
+	\dv_u \vec{\Phi} = - 	\dv_u \vec{f} \cdot \left ( \dv_w \vec{f}\right)^{-1}
+\end{equation}
+
+\subsection{Perturbation du premier ordre}
+
+Calculons la perturbation de $y$ pour une variation admissible $\delta \vec{x}$ :
+\[
+	\delta y
+	= \delta \vec{x} \cdot \dv_x y
+	= \delta\vec{u} \cdot \dv_u y
+	+ \delta\vec{w} \cdot \dv_w y
+	= \delta \vec{u} \cdot \Big(\dv_u y + \dv_u \vec{\Phi} \cdot \dv_w y\Big).
+\]
+On remarquera cependant que, par définition, $z(\vec{u})=y(\vec{u},\vec{\Phi}(\vec{u}))$, et donc
+\begin{equation}
+	\label{eq:first_order_commute}
+	\dv_u z
+	= \dv_u y + \dv_u \vec{\Phi} \cdot \dv_w y, 
+	\quad \Rightarrow \quad
+	\delta y = \delta\vec{u} \cdot \dv_u z = \delta z
+\end{equation}
+Autrement dit, \emph{au premier ordre}, dériver $y$ puis se restreindre à des variations admissibles
+revient exactement à dériver la restriction $z$.
+
+\subsection{Perturbation du second ordre}
+
+Au second ordre maintenant, on aura, pour une variation admissible :
+\begin{equation}
+	\begin{split}
+		\delta^2 y
+		&= \dfrac{1}{2} \delta \vec{x} \delta \vec{x} : \dv_x \dv_x y \\
+		&= \dfrac{1}{2}  \Big( 
+		\delta \vec{u} \delta \vec{u} : \dv_u \dv_u y 
+		+  \delta \vec{u} \delta \vec{w} : \dv_w \dv_u y
+		+ \delta \vec{w} \delta \vec{u} : \dv_u \dv_w y
+		+  \delta \vec{w} \delta \vec{w} : \dv_w \dv_w y
+	 	\Big) \\
+	 	&= \dfrac{1}{2} \delta \vec{u} \delta \vec{u} : \Big (
+			\dv_u\dv_u y 
+			+ \dv_u \vec{\Phi} \cdot \dv_w \dv_u y 
+			+ \dv_u \dv_w y \cdot (\dv_u \vec{\Phi})^\dag 
+			+ \dv_u \vec{\Phi} \cdot \dv_w \dv_w y  \cdot (\dv_u \vec{\Phi})^\dag
+		\Big ),
+	\end{split}
+\end{equation}
+tandis que perturber la restriction $z(\vec{u})=y(\vec{u},\vec{\Phi}(\vec{u}))$ donne :
+\begin{equation}
+	\begin{split}
+		\delta^2 z 
+		&= \dfrac{1}{2} \delta \vec{u} \delta \vec{u} : \dv_u \dv_u z \\
+		&= \dfrac{1}{2} \delta \vec{u} \delta \vec{u} : \dv_u \Big (\dv_u y + \dv_u \vec{\Phi} \cdot \dv_w y \Big ) \\
+		&= \dfrac{1}{2} \delta \vec{u} \delta \vec{u} : \Big (
+			\dv_u\dv_u y 
+			+ \dv_u \vec{\Phi} \cdot \dv_w \dv_u y 
+			+ \dv_u \dv_w y \cdot (\dv_u \vec{\Phi})^\dag 
+			+ \dv_u \vec{\Phi} \cdot \dv_w \dv_w y  \cdot (\dv_u \vec{\Phi})^\dag
+			+ \dv_u \dv_u \vec{\Phi} \cdot \dv_w y
+		\Big ) \\
+		&= \delta^2 y + \dfrac{1}{2} \delta \vec{u} \delta \vec{u} : \dv_u \dv_u \vec{\Phi} \cdot \dv_w y \\
+		&= \delta^2 y + \delta^2 \vec{\Phi} \cdot \dv_w y.
+	\end{split}
+\end{equation}
+
+Cette second façon de procéder fait apparaître le terme de courbure $\delta^2 \vec{\Phi} \cdot \dv_w y$ qui manque au premier développement.
+Il est important de noter que ce terme disparaît dans le cas des contraintes affines
+(\ie\ $\vec{f}(\vec{x})=C \cdot \vec{x}-\vec{p}$), auquel cas $\vec{\Phi}$ est affine également et donc $\delta^2 \vec{\Phi} = \vec{0}$.
+C'est la raison pour laquelle les contraintes structurelles linéaires utilisées dans la partie principale ne posent pas de subtilité, même aux ordres supérieurs.
+
+
+
+
+\end{document}

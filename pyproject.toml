@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stellarmicro"
+version = "0.1.0"
+description = "Fast analytic stellar microphysics (EOS, radiation, nuclear) for large grids."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Pierre Houdayer" }
+]
+keywords = [
+  "stellar-physics",
+  "microphysics",
+  "equation-of-state",
+  "opacity",
+  "nuclear",
+  "astrophysics"
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+dependencies = [
+  "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+autograd = [
+  "autograd>=1.6",
+]
+
+dev = [
+  "pytest>=8",
+  "matplotlib>=3.7",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# -------------------------
+# Pytest configuration
+# -------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "visual: plot-based tests requiring --run-visual",
+]
