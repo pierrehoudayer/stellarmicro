@@ -114,3 +114,7 @@ eps = eps_pp(rho, T, Y, Z)
 * Tests: `pytest` (plus optional `--run-visual`).
 
 ---
+
+## License
+
+MIT License (see `LICENSE`).
