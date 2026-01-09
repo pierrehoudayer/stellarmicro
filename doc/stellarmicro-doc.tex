@@ -67,6 +67,7 @@
 \newcommand{\kb}{k_{\mathrm{B}}}
 \newcommand{\me}{m_{\mathrm{e}}}
 \newcommand{\muu}{m_{\mathrm{u}}}
+\newcommand{\DTad}{\nabla_{\mathrm{ad}}}
 
 \title{Microphysique stellaire analytique (\texttt{stellarmicro})}
 \author{Pierre Houdayer \& \texttt{69359f40-ae50-832b-9492-e8c9f2fbe3df}}
@@ -415,7 +416,9 @@ Ces moyennes $\langle a \rangle$ s'écrivent en fonction de $y_i^r$ comme :
 \end{equation}
 ce qui donne par exemple : 
 \begin{equation}
-	\langle r \rangle = \sum_{ir} r x_i^r = \sum_{ir} x_i y_i^r.
+	\langle r \rangle = \sum_{ir} r x_i^r = \sum_{ir} x_i y_i^r,
+	\quad \text{et} \quad
+	\langle r^2 \rangle = \sum_{ir} r^2 x_i^r = \sum_{ir} x_i \big [ r^2 - (r-1)^2 \big] y_i^r = \sum_{ir} x_i (2r - 1) y_i^r.
 \end{equation}
 Ainsi, même si un seul $y_i^r$ est pertinent à la fois pour l'élément $i$, ces moyennes continuent de coupler les équations en via leur somme sur $i$.
 
@@ -565,7 +568,7 @@ On donnera les premières valeurs de $\mathcal{D}_n$ à titre d'exemple :
 	\qquad
 	\mathcal{D}_2(\Lambda) = \dfrac{\Lambda (1 - \Lambda)}{(1 + \Lambda)^3}, 
 	\qquad
-	\mathcal{D}_3(\Lambda) =\dfrac{\Lambda(1 - 4 \Lambda + \Lambda^2)}{(1 + \Lambda)^4}
+	\mathcal{D}_3(\Lambda) =\dfrac{\Lambda(1 - 4 \Lambda + \Lambda^2)}{(1 + \Lambda)^4}.
 \end{equation}
 
 Pour mesurer l'impact d'une telle modélisation, on calculera de façon consistante $\delta \eta_{(ir)}$ à partir de $\delta f_{\star}$ (\cf Eq.~\eqref{eq:delta_degeneracy}) en remarquant que $\Lambda \propto \langle r^2 \rangle^{3/2}$ :
@@ -612,21 +615,29 @@ Ainsi, de façon strictement analogue à ce qui a été fait plus haut, on écri
 \end{equation}
 Les dérivées du facteur d'ionisation peuvent être rendues complètement explicites dans le cas de la correction de Debye en notant que
 \begin{equation}
-	d \delta \eta_{(ir)} = \dfrac{2r - 1}{6} \mathcal{D}_{2}(\Lambda_0) d \ln \Lambda_0
+	d \delta \eta_{(ir)} = (2r - 1)\dfrac{\mathcal{D}_2}{6} d \ln \Lambda_0 
 \end{equation}
 et ainsi : 
 \begin{align}
   \label{eq:dPsi_dlnv}
   \frac{\d \Psi}{\d \ln v}
   &=
-  1 + \dfrac{2r - 1}{12} \mathcal{D}_{2}(\Lambda_0),
+  1 - (2r - 1)\dfrac{\lambda_v \mathcal{D}_2}{6}
   \\
   \label{eq:dPsi_dlnT}
   \frac{\d \Psi}{\d \ln T}
   &=
   \left(\frac{3}{2}+\frac{\chi}{kT}\right)
-  + \dfrac{2r - 1}{4} \mathcal{D}_{2}(\Lambda_0).
+  - (2r - 1)\dfrac{\lambda_T \mathcal{D}_2}{6}
 \end{align}
+avec 
+\begin{equation}
+	\lambda_q \equiv \dfrac{\d \ln \Lambda_0}{\d \ln q}, 
+	\qquad \Rightarrow \qquad
+	\lambda_v = \dfrac{-1}{2}, 
+	\quad
+	\lambda_T = \dfrac{-3}{2}
+\end{equation}
 
 
 \newpage 
@@ -738,10 +749,12 @@ Sous cette contrainte de stationnarité, on aura simplement :
 \end{equation}
 ce qui donne pour l'énergie libre physique approximée (adimensionnée)
 \begin{equation}
+	\label{eq:F}
 	F(v, T, \vec{X}) = F_0(v, T, \vec{X}) - x_{\text H} y_{\text H} + \sum_{ir} x_i \ln (1 - y_i^r),
 \end{equation}
 avec la jauge $F_0$ qui sera déterminée de façon à récupérer les potentiels thermodynamiques idéaux dans les limites adéquates.
 Par la suite, on déterminera ces potentiels adimensionnés par $kT/\bar{m}$ à l'aide des dérivées de $F_{\star}$.
+En effet, même si l’on dispose d'une forme réduite de $F$ par la substitution de $\vec{S}_{\star} = \vec{0}$, les dérivées thermodynamiques doivent être prises sur $F_{\star}$ puis évaluées à l’optimum afin de conserver la dépendance explicite en $(v, T)$ portée par $\Psi_i^r$.
 Par exemple, pour le potentiel thermodynamique adimensionné :
 \[
 	\Omega = \left ( \dfrac{kT}{\bar{m}} \right )^{-1} \, pv,
@@ -751,7 +764,7 @@ on aura simplement :
 	\begin{split}
 		\Omega &= - \d_{\ln v} F_{\star} \\
 		&= - \d_{\ln v} F_0 + \sum_{ir} x_i y_i^r \left ( 1 - \d_{\ln v} \delta \eta_{(ir)} \right ) \\
-		&= - \d_{\ln v} F_0 + \sum_{ir} x_i y_i^r + \dfrac{1}{12} \mathcal{D}_{2}(\Lambda_0) \sum_{ir} x_i (2r-1) y_i^r.
+		&= - \d_{\ln v} F_0 + \sum_{ir} x_i y_i^r - \dfrac{\lambda_v \mathcal{D}_{2}}{6} \sum_{ir} x_i (2r-1) y_i^r.
 	\end{split}
 \end{equation}
 
@@ -764,7 +777,8 @@ Enfin notons que l'on a classiquement :
 ce qui nous permet de déduire la contrainte $\d_{\ln v} F_0 = -1$.
 Finalement, 
 \begin{equation}
-	\Omega(v, T, \vec{X}) = 1 + \langle r \rangle + \dfrac{\langle r^2 \rangle}{12} \mathcal{D}_{2}(\Lambda_0).
+	\label{eq:Omega}
+	\Omega(v, T, \vec{X}) = 1 + \langle r \rangle - \dfrac{\lambda_v \mathcal{D}_{2}}{6} \langle r^2 \rangle.
 \end{equation}
 
 Pour retrouver l'énergie interne adimensionnée $E$, on remarquera que :
@@ -776,20 +790,24 @@ soit sous forme adimensionnée :
 	\begin{split}
 		E &= - \d_{\ln T} F_{\star} \\
 		&= - \d_{\ln T} F_0 + \sum_{ir} x_i y_i^r \left ( \dfrac{3}{2} + \dfrac{\chi_i^r}{kT} - \d_{\ln T} \delta \eta_{(ir)} \right ) \\
-		&= - \d_{\ln T} F_0 + \dfrac{3}{2} \langle r \rangle + \dfrac{\langle \chi \rangle}{kT} + \dfrac{\langle r^2 \rangle}{4} \mathcal{D}_{2}(\Lambda_0),
+		&= - \d_{\ln T} F_0 + \dfrac{3}{2} \langle r \rangle + \dfrac{\langle \chi \rangle}{kT} - \dfrac{\lambda_T \mathcal{D}_{2}}{6} \langle r^2 \rangle.
 	\end{split}
 \end{equation}
-fournissant la nouvelle contrainte sur la jauge $\d_{\ln T} F_0 = - 3/2$.
+Ainsi, si l'on souhaite obtenir la limite idéale 
+\[
+	E \underset{\Lambda \rightarrow 0}{\longrightarrow} \dfrac{3}{2} \big (1 + \langle r \rangle \big) + \dfrac{\langle \chi \rangle}{kT},
+\]
+il sera nécessaire pour $F_0$ de vérifier $\d_{\ln T} F_0 = - 3/2$ et donc :
+\begin{equation}
+	\label{eq:E}
+	E(v, T, \vec{X}) = \dfrac{3}{2} \big (1 + \langle r \rangle \big) + \dfrac{\langle \chi \rangle}{kT} - \dfrac{\lambda_T \mathcal{D}_{2}}{6} \langle r^2 \rangle.
+\end{equation}
 
 Notons qu'il sera possible de fournir le dernier potentiel ``de passage'' à partir de cette expression, lequel n'est autre que l'entropie adimensionnée : 
 \[
 	\Sigma = \left ( \dfrac{kT}{\bar{m}} \right )^{-1} \, Ts =  \left ( \dfrac{k}{\bar{m}} \right )^{-1} \, s.
 \]
-En effet, puisque $Ts = \varepsilon - f$ :
-\begin{equation}
-	\Sigma = \dfrac{3}{2} (1 + \langle r \rangle) + \dfrac{\langle \chi \rangle}{kT} + \dfrac{\langle r^2 \rangle}{4} \mathcal{D}_{2}(\Lambda_0) - F_0 + x_{\text H} y_{\text H} - \sum_{ir} x_i \ln (1 - y_i^r)
-\end{equation}
-
+En effet, puisque $Ts = \varepsilon - f$, on aura simplement $\Sigma = E - F$ sous forme adimensionnée.
 Cette expression nous permet de fournir une forme plus précise de la jauge $F_0$.
 En effet, on peut chercher à récupérer la formule de Sackur-Tetrode dans la limite du gaz neutre idéal, auquel cas on a :
 \[
@@ -801,15 +819,110 @@ ce qui nous permet l'identification
 	F_0(v, T, \vec{X}) = \sum_i x_i \ln \left ( \dfrac{n_i \lambda_i^3}{\mathcal{Z}_i} \right ) - 1,
 \end{equation}
 avec $\mathcal{Z}_i = g_i^0$ la fonction de partition (dégénérée) du gaz neutre, dont le niveau d'énergie a été pris comme référence.
-
-Notons qu'à partir du moment où les deux potentiels de transition ont été définis, il est possible de retrouver les potentiels thermodynamiques restants à partir des relations \eqref{eq:legendre_potential_eps}-\eqref{eq:legendre_potential_h} : 
+On pourra remarquer que cette énergie libre neutre vérifie bien les contraintes énoncées plus haut.
+Notons enfin qu'à partir du moment où $E$, $F$ et $\Omega$ sont connus, il est possible de retrouver les potentiels thermodynamiques restants à partir des relations \eqref{eq:legendre_potential_eps}-\eqref{eq:legendre_potential_h} : 
 \begin{equation}
-	E = F_{\star} + \Sigma, 
+	\label{eq:potential_relations}
+	\Sigma = E - F
 	\qquad
-	G = F_{\star} + \Omega,
+	G = F + \Omega,
 	\qquad
-	H = F_{\star} + \Sigma + \Omega
+	H = E + \Omega.
 \end{equation}
+
+\subsection{Coefficients thermodynamiques}
+
+Naturellement, les potentiels thermodynamiques ne constituent pas les seul grandeurs d'intérêt.
+De nombreux coefficients (pour la plupart adimensionnés) doivent être préalablement calculés pour parvenir à une cartographie complète des grandeurs thermodynamiques.
+Nombres d'entre eux sont liés algébriquement mais un nombre minimal de ces coefficients doit être calculé pour évaluer les autres.
+Ceux-ci requiert généralement le calcul des dérivées des potentiels présentés plus haut.
+Commençons par le calcul du premier exposant adiabatique : 
+\begin{equation}
+	\Gamma_1 \equiv - \left ( \dfrac{\partial \ln p}{\d \ln v} \right )_{s, \vec{X}},
+\end{equation}
+en remarquant d'abord que :
+\begin{equation}
+	d \ln p = - \alpha d \ln v + \beta d \ln T, 
+	\qquad
+	\alpha \equiv - \left ( \dfrac{\partial \ln p}{\d \ln v} \right )_{T, \vec{X}}, 
+	\qquad
+	\beta \equiv \left ( \dfrac{\partial \ln p}{\d \ln T} \right )_{v, \vec{X}}.
+\end{equation}
+Puisque $p \underset{v, T}{\propto} \Omega T / v$, les coefficients $\alpha$ et $\beta$ peuvent-être très simplement exprimés en fonction du potentiel thermodynamique $\Omega$ : 
+\begin{equation}
+	\label{eq:alpha_beta}
+	\alpha = 1 - \dfrac{1}{\Omega} \dfrac{\d \Omega }{\d \ln v}, 
+	\qquad
+	\beta = 1 + \dfrac{1}{\Omega} \dfrac{\d \Omega }{\d \ln T},
+\end{equation}
+et compte tenu de l'expression \eqref{eq:Omega} de $\Omega$, il s'agit des deux coefficients les plus simples à déterminer.
+En effet, en se rappelant que la différentielle d'une moyenne (à $\vec{X}$ donné) s'écrit comme :
+\begin{equation}
+	d \langle a \rangle 
+	= \sum_{ir} x_i \Delta a_i^r d y_i^r,
+	\qquad
+	\Delta a_i^r = a_i^r - a_i^{r-1},
+\end{equation}
+on aura :
+\begin{equation}
+	\dfrac{\d \Omega }{\d q} 
+	= \dfrac{\d \bar{r}}{\d q} - \dfrac{\lambda_v \lambda_q \mathcal{D}_{3}}{6} \langle r^2 \rangle - \dfrac{\lambda_v \mathcal{D}_{2}}{6} \dfrac{\d \langle r^2 \rangle}{\d q}. \\
+\end{equation}
+
+À l'aide de la différentielle de la pression, on pourra ainsi exprimer $\Gamma_1$ en fonction d'un autre exposant adiabatique :
+\begin{equation}
+	\Gamma_1 = \alpha + \beta (\Gamma_3 - 1), 
+	\qquad
+	\Gamma_3 - 1 \equiv  - \left ( \dfrac{\partial \ln T}{\d \ln v} \right )_{s, \vec{X}},
+\end{equation}
+et puisque les trois exposants adiabatiques vérifient l'identité 
+\[
+	\dfrac{\Gamma_2 (\Gamma_3 - 1)}{\Gamma_1 (\Gamma_2 - 1)} = 1,
+\]
+la connaissance d'un seul d'entre eux suffit à déterminer les deux autres.
+On a alors simultanément le gradient adiabatique, $\DTad$, directement fonction de $\Gamma_2$ :
+\begin{equation}
+	\dfrac{\Gamma_2}{\Gamma_2 - 1} = \DTad \equiv  \left ( \dfrac{\partial \ln T}{\d \ln p} \right )_{s, \vec{X}} = \dfrac{1}{\beta} \left (1 - \dfrac{\alpha}{\Gamma_1} \right ).
+\end{equation}
+Il sera également possible d'accéder aux capacités thermiques (normalisées) $C_v$ et $C_p$, à l'aide des identités
+\[
+	C_v = \frac{\beta \Omega}{\Gamma_3 - 1}, 
+	\qquad 
+	C_p = \dfrac{\Gamma_1}{\alpha} C_v.
+\]
+
+Ainsi, une fois $\alpha$ et $\beta$ donnés par \eqref{eq:alpha_beta}, il suffit d'un seul coefficient parmi $\Gamma_1, \Gamma_2, \Gamma_3, \DTad, C_v$ et $C_p$ pour retrouver tous les autres.
+Le plus simple est sans doute $C_v$, qui est directement donné par 
+\begin{equation}
+	C_v = \dfrac{\d \Sigma}{\d \ln T} = E + \dfrac{\d E}{\d \ln T}
+\end{equation} 
+soit
+\begin{equation}
+	\dfrac{\d E}{\d \ln T} = \dfrac{3}{2}\dfrac{\d \bar{r}}{\d \ln T} + \dfrac{1}{kT} \dfrac{\d \langle \chi \rangle}{\d \ln T} - \dfrac{\langle \chi \rangle}{kT} - \dfrac{\lambda_T \mathcal{D}_{2}}{6} \dfrac{\d \langle r^2 \rangle}{\d \ln T} - \dfrac{\lambda_T \lambda_T \mathcal{D}_{3}}{6} \langle r^2 \rangle
+\end{equation}
+
+\subsection{Forme dimensionnée}
+
+En notant les différentes dérivées de $-F$ (le signe $-$ est là pour manipuler des quantités principalement positives) : $F_v, F_T, F_{vv}$ ..., les potentiels thermodynamiques s'écrivent :
+\begin{align}
+	f &= \left (\dfrac{kT}{\bar{m}} \right ) F \\
+	\omega &= \left (\dfrac{kT}{\bar{m}} \right ) F_v \\
+	\varepsilon &= \left (\dfrac{kT}{\bar{m}} \right ) F_T \\
+	g &= \left (\dfrac{kT}{\bar{m}} \right ) (F_v + F) \\
+	Ts &= \left (\dfrac{kT}{\bar{m}} \right ) (F_T - F) \\
+	h &= \left (\dfrac{kT}{\bar{m}} \right ) (F_v + F_T)
+\end{align}
+et les coefficients :
+\begin{align}
+	\alpha &= 1 - \dfrac{F_{vv}}{F_v} \\
+	\beta &= 1 + \dfrac{F_{vT}}{F_v} \\
+	c_v &= \left ( \dfrac{k}{\bar{m}} \right ) (F_{T} + F_{TT})  \\
+	c_p &= \left ( \dfrac{k}{\bar{m}} \right ) \left ( F_{T} + F_{TT} + \dfrac{(F_v + F_{vT})^2}{F_v - F_{vv}} \right ) \\
+	\Gamma_1 &= \dfrac{(F_v - F_{vv})(F_T + F_{TT}) + (F_v + F_{vT})^2}{F_v(F_T + F_{TT})} \\
+	\DTad &= \dfrac{F_v(F_v + F_{vT})}{(F_v - F_{vv})(F_T + F_{TT}) + (F_v + F_{vT})^2} \\
+	\Gamma_3 &= 1 + \dfrac{F_v + F_{vT}}{F_{T} + F_{TT}}
+\end{align}
+
 
 
 
