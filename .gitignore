@@ -1,0 +1,37 @@
+cat > .gitignore <<'EOF'
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.venv/
+.pytest_cache/
+**/*.egg-info/
+**/*.egg-info/**
+*.egg-info/
+build/
+dist/
+*.egg
+*.pyc
+
+# OS / IDE
+**/.vscode/
+**/.vscode/**
+.vscode/
+.DS_Store
+*.swp
+*.swo
+*~
+
+# LaTeX build artefacts
+doc/*.aux
+doc/*.log
+doc/*.out
+doc/*.toc
+doc/*.mtc*
+doc/*.maf
+doc/*.synctex.gz
+doc/*.fls
+doc/*.fdb_latexmk
+doc/*.bak
+EOF
+

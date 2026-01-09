@@ -1,0 +1,46 @@
+Sur la branche master
+Modifications qui seront validées :
+  (utilisez "git restore --staged <fichier>..." pour désindexer)
+	supprimé :        src/stellarmicro.egg-info/PKG-INFO
+	supprimé :        src/stellarmicro.egg-info/SOURCES.txt
+	supprimé :        src/stellarmicro.egg-info/dependency_links.txt
+	supprimé :        src/stellarmicro.egg-info/requires.txt
+	supprimé :        src/stellarmicro.egg-info/top_level.txt
+
+Modifications qui ne seront pas validées :
+  (utilisez "git add/rm <fichier>..." pour mettre à jour ce qui sera validé)
+  (utilisez "git restore <fichier>..." pour annuler les modifications dans le répertoire de travail)
+	modifié :         doc/stellarmicro-doc.pdf
+	modifié :         doc/stellarmicro-doc.tex
+	modifié :         pyproject.toml
+	modifié :         src/stellarmicro/atomic.py
+	modifié :         src/stellarmicro/eos/__init__.py
+	supprimé :        src/stellarmicro/eos/config.py
+	modifié :         src/stellarmicro/eos/core.py
+	modifié :         src/stellarmicro/nuclear.py
+	modifié :         src/stellarmicro/radiation.py
+	modifié :         src/stellarmicro/solar.py
+	supprimé :        tests/test_eos_consistency.py
+	modifié :         tests/test_eos_options.py
+	modifié :         tests/test_eos_sanity.py
+	modifié :         tests/test_nuclear.py
+	modifié :         tests/test_radiation.py
+	modifié :         tests/test_visual_smoke.py
+
+Fichiers non suivis:
+  (utilisez "git add <fichier>..." pour inclure dans ce qui sera validé)
+	.gitignore
+	out.txt
+	src/stellarmicro/eos/composition.py
+	src/stellarmicro/eos/ionisation_spec.py
+	src/stellarmicro/eos/neutral.py
+	src/stellarmicro/eos/saha.py
+	tests/test_atomic_api.py
+	tests/test_composition.py
+	tests/test_composition_from_logeps.py
+	tests/test_eos_YZ_wrapper.py
+	tests/test_eos_free_energy_derivs_autograd.py
+	tests/test_eos_identities.py
+	tests/test_eos_shapes.py
+	tests/test_solar_composition.py
+

@@ -1,6 +1,11 @@
 import numpy as np
 
-from stellarmicro.radiation import opacity, radiative_conductivity, RadiationOptions
+from stellarmicro.radiation import (
+    opacity, 
+    radiative_conductivity, 
+    radiative_free_energy,
+    RadiationOptions
+)  
 
 
 def test_opacity_positive_finite():
@@ -33,3 +38,11 @@ def test_radiative_conductivity_vectorization_shape():
     TT, RR = np.meshgrid(T, rho)
     C = radiative_conductivity(RR, TT)
     assert C.shape == RR.shape
+    
+def test_radiative_free_energy_scaling_with_rho():
+    T = 1e6
+    rho1, rho2 = 1e-7, 1e-5
+    f1 = radiative_free_energy(rho1, T)
+    f2 = radiative_free_energy(rho2, T)
+    # f_rad ~ -1/rho
+    assert f1 < f2

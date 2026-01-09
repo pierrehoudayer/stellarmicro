@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 
 from ._np import np
-from .constants import sigma_SB
+from .constants import sigma_SB, k_B, c
 from .solar import kappa_sun_ref
 
 
-# ============================================================
-# Options
-# ============================================================
-
+# --- Radiation options dataclass
 @dataclass(frozen=True)
 class RadiationOptions:
     """
@@ -29,27 +26,12 @@ class RadiationOptions:
     kappa_ref: float = kappa_sun_ref
 
 
-# ============================================================
-# Opacity (analytic fit)
-# ============================================================
-
+# --- Analytic opacity function
 def opacity(T, opt: RadiationOptions = RadiationOptions()):
     """
     Analytic opacity approximation as a function of temperature only.
-
-    This is the fast, lightweight fit you used historically. It is meant
-    as a cheap stand-in for table-based opacities in large-grid workflows.
-
-    Parameters
-    ----------
-    T : array-like
-        Temperature [K]
-    opt : RadiationOptions
-
-    Returns
-    -------
-    kappa : array-like
-        Opacity [cm^2 g^-1]
+    It is meant as a cheap stand-in for table-based opacities in 
+    large-grid workflows.
     """
     p = opt.p
     Kref = opt.kappa_ref
@@ -63,40 +45,6 @@ def opacity(T, opt: RadiationOptions = RadiationOptions()):
     )
     return kappa
 
-
-# ============================================================
-# Radiative transport coefficients
-# ============================================================
-
-def radiative_conductivity(rho, T, opt: RadiationOptions = RadiationOptions()):
-    """
-    Radiative conductivity chi.
-
-    Using the standard diffusion approximation:
-        chi = 16 * sigma_SB * T^3 / (3 * rho * kappa)
-
-    Parameters
-    ----------
-    rho : array-like
-        Density [g cm^-3]
-    T : array-like
-        Temperature [K]
-    opt : RadiationOptions
-
-    Returns
-    -------
-    chi : array-like
-        Radiative conductivity (in cgs-consistent units)
-    """
-    kappa = opacity(T, opt=opt)
-    chi = 16.0 * sigma_SB * T**3 / (3.0 * rho * kappa)
-    return chi
-
-
-# ============================================================
-# Convenience
-# ============================================================
-
 def opacity_with_params(T, *, p: float = 3.0, kappa_ref: Optional[float] = None):
     """
     Convenience wrapper allowing quick sweeps without constructing options.
@@ -107,10 +55,38 @@ def opacity_with_params(T, *, p: float = 3.0, kappa_ref: Optional[float] = None)
     return opacity(T, opt=opt)
 
 
+
+# --- Radiative transport coefficient
+def radiative_conductivity(rho, T, opt: RadiationOptions = RadiationOptions()):
+    """
+    Radiative conductivity chi.
+    Using the Eddington diffusion approximation:
+    
+        chi = 16 * sigma_SB * T^3 / (3 * rho * kappa)
+    """
+    kappa = opacity(T, opt=opt)
+    chi = 16.0 * sigma_SB * T**3 / (3.0 * rho * kappa)
+    return chi
+
+# --- Radiative free energy
+def radiative_free_energy(rho, T):
+    """
+    Radiative correction to the EOS free energy:
+
+        f_rad = -(4 sigma_SB T^4 / (3 rho c))
+    """
+    rho = np.asarray(rho, dtype=float)
+    T   = np.asarray(T, dtype=float)
+
+    return -(4.0 * sigma_SB * T**4) / (3.0 * rho * c)
+
+
+
 __all__ = [
     "RadiationOptions",
     "opacity",
     "opacity_with_params",
     "radiative_conductivity",
+    "radiative_free_energy",
 ]
 
