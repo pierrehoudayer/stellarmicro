@@ -6,7 +6,7 @@ Small, dependency‑light microphysics toolkit for stellar modelling (**cgs unit
 * simple radiation helpers (opacity + radiative conductivity),
 * toy nuclear energy generation fits.
 
-> **Status:** actively developed. The API may evolve between minor versions.
+> **Status:** currently developed. The API may evolve between minor versions.
 
 ---
 
@@ -36,32 +36,70 @@ pytest -q --run-visual
 
 ---
 
-## Quickstart
+## What’s new in v0.2.0
 
-### EOS (new in 0.2.0)
+v0.2.0 focuses on two major improvements:
+
+- **Thermodynamic consistency**: the EOS is now derived from a single (dimensionless) free energy potential and its log-derivatives, consistent with the closed analytic Saha approximation used internally.
+- **General composition handling**: the EOS no longer assumes an implicit H/He/Z-only interface. You can now provide an explicit element mixture via `Composition`, with an optional “rest” pseudo-component for unspecified metals.
+
+These changes preserve the lightweight, analytic nature of the original fits, while making the EOS easier to integrate into stellar structure workflows.
+
+---
+
+## Quickstart: EOS
+
+The EOS entry-point is `compute_eos_state(rho, T, comp, opt)` where `comp` is a `Composition` instance.
+
+### 1) Direct explicit composition
 
 ```python
 import numpy as np
 from stellarmicro.eos import Composition, EOSOptions, compute_eos_state
 
-# legacy-like composition
-comp = Composition.from_YZ(Y=0.25, Z=0.02)
+rho = 1e-7
+T   = 1e5
 
-rho = np.logspace(-8, -1, 50)     # g/cm^3
-T   = np.logspace(3.5, 6.5, 60)   # K
-TT, RR = np.meshgrid(T, rho)
+# Explicit elements: H, He, C, O (mass fractions must sum <= 1 if allow_rest=True)
+comp = Composition(
+    i_i=[1, 2, 6, 8],
+    X_i=[0.70, 0.28, 0.01, 0.005],
+    allow_rest=True,   # remaining mass fraction becomes "rest" pseudo-component
+    A_rest=12.0,
+)
 
-st = compute_eos_state(RR, TT, comp, opt=EOSOptions(debye=True, radiative=True))
-
-print(st.G1.shape)                 # (rho, T) grid
-print(np.nanmin(st.G1), np.nanmax(st.G1))
+st = compute_eos_state(rho, T, comp, opt=EOSOptions(debye=True, radiative=True))
+print(st.G1, st.p, st.eps)
 ```
 
-The returned `EOSState` exposes (among others):
+### 2) Legacy helper: from (Y, Z)
 
-* thermodynamic potentials: `f, p, eps, s, h, g`
-* coefficients: `alpha, beta, cv, cp, G1, DTad, G3`
-* ionisation diagnostics: `Psi_ir, y_ir`
+```python
+from stellarmicro.eos import Composition, compute_eos_state
+
+rho = 1e-7
+T   = 1e5
+Y, Z = 0.25, 0.02
+
+comp = Composition.from_YZ(Y, Z)
+st = compute_eos_state(rho, T, comp)  # opt defaults to EOSOptions()
+print(st.G1)
+```
+
+### 3) Solar mixture helper
+
+
+```python
+from stellarmicro.eos import Composition, compute_eos_state
+
+rho = 1e-7
+T   = 1e5
+
+# Convenience constructor (up to Fe, depending on your implementation)
+comp = Composition.solar()
+st = compute_eos_state(rho, T, comp)
+print(st.G1)
+```
 
 ### Radiation
 
@@ -91,21 +129,34 @@ eps = eps_pp(rho, T, Y, Z)
 
 ---
 
+### Vectorisation
+
+All EOS routines accept:
+- scalars `(rho, T)`
+- 1D profiles `(rho.shape == T.shape == (n,))`
+- 2D meshes from `np.meshgrid`
+
+```python
+import numpy as np
+from stellarmicro.eos import Composition, compute_eos_state, EOSOptions
+
+comp = Composition.from_YZ(Y=0.25, Z=0.02)
+
+rho = np.logspace(-8, -1, 80)
+T   = np.logspace(3.5, 6.0, 90)
+TT, RR = np.meshgrid(T, rho)
+
+st = compute_eos_state(RR, TT, comp, opt=EOSOptions(debye=True, radiative=True))
+print(st.G1.shape)  # (80, 90)
+```
+
+---
+
 ## Conventions
 
 * All physical quantities are in **cgs**.
 * The EOS is built from a dimensionless free energy and its **log‑derivatives**, following the notes in `doc/`.
 * Composition uses explicit elements `(i_i, X_i)` and supports an optional **“rest”** pseudo‑component when `sum(X_i) < 1`.
-
----
-
-## Version highlights
-
-### 0.2.0
-
-* Refactored EOS around an explicit `Composition` object `(i_i, X_i)` and reaction‑level `IonisationSpec`.
-* Closed analytic Saha ionisation (vectorised), optional **Debye** and **radiative** corrections.
-* Cleaner internal separation: `composition.py`, `neutral.py`, `saha.py`, `core.py`.
 
 ---
 
