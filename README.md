@@ -107,11 +107,12 @@ print(st.G1)
 import numpy as np
 from stellarmicro.radiation import opacity, radiative_conductivity
 
-T = np.logspace(3, 7, 200)
-kappa = opacity(T)
+rho = np.logspace(-8, -1, 200)
+T = np.logspace(3.5, 7, 200)
+comp = Composition.from_YZ(Y=0.25, Z=0.02)
 
-rho = 1e-7
-chi = radiative_conductivity(rho, T)
+kappa = opacity(rho, T, comp)
+chi = radiative_conductivity(rho, T, comp)
 ```
 
 ### Nuclear
@@ -142,12 +143,12 @@ from stellarmicro.eos import Composition, compute_eos_state, EOSOptions
 
 comp = Composition.from_YZ(Y=0.25, Z=0.02)
 
-rho = np.logspace(-8, -1, 80)
-T   = np.logspace(3.5, 6.0, 90)
+rho = np.logspace(-8, -1, 200)
+T   = np.logspace(3.5, 6.0, 200)
 TT, RR = np.meshgrid(T, rho)
 
 st = compute_eos_state(RR, TT, comp, opt=EOSOptions(debye=True, radiative=True))
-print(st.G1.shape)  # (80, 90)
+print(st.G1.shape)  # (200, 200)
 ```
 
 ---

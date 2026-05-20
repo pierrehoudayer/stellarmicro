@@ -1,92 +1,118 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from ._np import np
-from .constants import sigma_SB, k_B, c
-from .solar import kappa_sun_ref
+from .constants import sigma_SB, c, e, m_e
 
 
-# --- Radiation options dataclass
 @dataclass(frozen=True)
 class RadiationOptions:
     """
-    Options for analytic radiation/opacity helpers.
+    Options for the analytic H/He opacity.
+
+    The opacity scales do not include abundance factors. Abundances enter
+    through the reaction-axis number fractions x_ir built from the composition.
+    """
+
+    kappa_Hm: float = 800.0
+    kappa_K: float = 2400.0
+    alpha_Hminus: float = 3.0 / 4.0
+
+    xe_Z: float = 0.0
+    debye: bool = True
+    electron_scattering: bool = True
+
+
+def opacity(rho, T, comp, opt: RadiationOptions = RadiationOptions()):
+    """
+    Analytic H/He Rosseland opacity.
 
     Parameters
     ----------
-    p : float
-        Shape parameter controlling the smooth min/max blending in the
-        analytic opacity fit.
-    kappa_ref : float
-        Reference opacity scale (default: solar reference).
+    rho, T : float or array-like
+        Density and temperature in cgs units.
+    comp : Composition
+        Chemical composition used to build the Saha reaction axis.
+    opt : RadiationOptions
+        Opacity scales and small modelling choices.
+
+    Returns
+    -------
+    kappa : float or ndarray
+        Opacity in cm^2 g^-1.
     """
-    p: float = 3.0
-    kappa_ref: float = kappa_sun_ref
 
-
-# --- Analytic opacity function
-def opacity(T, opt: RadiationOptions = RadiationOptions()):
-    """
-    Analytic opacity approximation as a function of temperature only.
-    It is meant as a cheap stand-in for table-based opacities in 
-    large-grid workflows.
-    """
-    p = opt.p
-    Kref = opt.kappa_ref
-
-    T4 = T * 1e-4
-    T6 = T * 1e-6
-
-    # Your original blending form
-    kappa = Kref * (
-        ((T6**(-3/2) + T6**(-5/2))**(-1/p) + (T4**10)**(-1/p))**(-p)
-    )
-    return kappa
-
-def opacity_with_params(T, *, p: float = 3.0, kappa_ref: Optional[float] = None):
-    """
-    Convenience wrapper allowing quick sweeps without constructing options.
-    """
-    if kappa_ref is None:
-        kappa_ref = kappa_sun_ref
-    opt = RadiationOptions(p=p, kappa_ref=kappa_ref)
-    return opacity(T, opt=opt)
-
-
-
-# --- Radiative transport coefficient
-def radiative_conductivity(rho, T, opt: RadiationOptions = RadiationOptions()):
-    """
-    Radiative conductivity chi.
-    Using the Eddington diffusion approximation:
+    from .eos.ionisation_spec import IonisationSpec
+    from .eos.saha import compute_ionisation_state
     
-        chi = 16 * sigma_SB * T^3 / (3 * rho * kappa)
-    """
-    kappa = opacity(T, opt=opt)
-    chi = 16.0 * sigma_SB * T**3 / (3.0 * rho * kappa)
-    return chi
+    rho7 = rho / 1.0e-7
+    T4   = T   / 1.0e+4
 
-# --- Radiative free energy
+    ion = IonisationSpec.from_composition(comp)
+    state = compute_ionisation_state(rho, T, comp, ion, debye=opt.debye, derivs=False)
+
+    y_ir = state.y
+    x_ir = ion.x_ir
+
+    i_ir = ion.i_ir
+    r_ir = ion.r_ir.astype(float)
+    
+    xe = y_ir @ x_ir + opt.xe_Z
+    
+    # H- opacity
+    H = (i_ir == 1)
+    xH0 = ((1.0 - y_ir) * H) @ x_ir
+    kappa_Hm = (
+        opt.kappa_Hm
+        * xe
+        * xH0
+        * rho7**opt.alpha_Hminus
+    )
+
+    # Kramer opacities
+    next_ir = (i_ir[:, None] == i_ir[None, :]) & (ion.r_ir[None, :] == ion.r_ir[:, None] + 1)
+    y_next_ir = y_ir @ next_ir.T
+    xion_ir = y_ir - y_next_ir
+    
+    kappa_ir = (
+        opt.kappa_K
+        * r_ir**2
+        * xion_ir
+        * np.asarray(rho7)[..., None]
+        * np.asarray(T4  )[..., None]**(-3.5)
+    )
+    kappa_K = xe * (kappa_ir @ x_ir)
+
+    # Electron scattering opacity
+    sigma_T = (8.0 * np.pi / 3.0) * (e**2 / (m_e * c**2))**2
+    kappa_es = sigma_T * xe / comp.m_0
+
+    return kappa_Hm + kappa_K + kappa_es
+
+
+def radiative_conductivity(rho, T, comp, opt: RadiationOptions = RadiationOptions()):
+    """
+    Radiative conductivity in the diffusion approximation,
+
+        chi = 16 sigma_SB T^3 / (3 rho kappa).
+    """
+
+    kappa = opacity(rho, T, comp, opt=opt)
+
+    return 16.0 * sigma_SB * T**3 / (3.0 * rho * kappa)
+
+
 def radiative_free_energy(rho, T):
     """
-    Radiative correction to the EOS free energy:
-
-        f_rad = -(4 sigma_SB T^4 / (3 rho c))
+    Radiative contribution to the specific free energy.
     """
-    rho = np.asarray(rho, dtype=float)
-    T   = np.asarray(T, dtype=float)
-
     return -(4.0 * sigma_SB * T**4) / (3.0 * rho * c)
-
 
 
 __all__ = [
     "RadiationOptions",
     "opacity",
-    "opacity_with_params",
     "radiative_conductivity",
     "radiative_free_energy",
 ]
-

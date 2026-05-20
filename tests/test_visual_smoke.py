@@ -25,27 +25,36 @@ def _maybe_use_style(name: str) -> None:
 @pytest.mark.visual
 def test_quick_visual_overview(tmp_path):
     _maybe_use_style("pierre")
+    
     Y, Z = 0.25, 0.02
 
-    # --- opacity(T)
-    T = np.logspace(3.5, 7.0, 300)
-    kappa = opacity(T)
+    # --- Opacity map
+    rho = np.logspace(-8.0, -1.0, 120)
+    T3 = np.logspace(3.5, 6.0, 120)
+    TT, RR = np.meshgrid(T3, rho)  # TT, RR shape = (nrho, nT)
 
+    comp = Composition.from_YZ(Y, Z)
+    kappa = opacity(RR, TT, comp)
+    
+    from matplotlib.colors import LogNorm
+    levels = np.geomspace(kappa.min(), kappa.max(), 100)
+    norm = LogNorm(vmin=kappa.min(), vmax=kappa.max())
+    
     fig = plt.figure(constrained_layout=True)
     ax = fig.add_subplot(111)
-    ax.plot(T, kappa)
+    im = ax.contourf(TT, RR, kappa, levels=levels, norm=norm, cmap="magma_r")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel(r"$T$ [K]")
-    ax.set_ylabel(r"$\kappa$ [cm$^2$ g$^{-1}$]")
-    ax.set_title("Analytic opacity fit")
-    ax.grid(True, alpha=0.2)
+    ax.set_ylabel(r"$\rho$ [g cm$^{-3}$]")
+    ax.set_title(r"$\kappa$ map")
+    fig.colorbar(im, ax=ax, ticks=levels[::20], format="%.1e")
 
     out1 = tmp_path / "opacity.png"
     fig.savefig(out1, dpi=150)
     plt.close(fig)
 
-    # --- eps_nuc(T)
+    # --- eps_nuc(rho, T, Y, Z)
     rho0 = 1.0
     T2 = np.logspace(6.0, 8.0, 300)
     e = eps_nuc_YZ(rho0, T2, Y, Z)
@@ -64,14 +73,14 @@ def test_quick_visual_overview(tmp_path):
     fig.savefig(out2, dpi=150)
     plt.close(fig)
 
-    # --- EOS map (Gamma1) with solar composition
+    # --- EOS map (Gamma1)
     rho = np.logspace(-8.0, -1.0, 120)
     T3 = np.logspace(3.5, 6.0, 120)
     TT, RR = np.meshgrid(T3, rho)  # TT, RR shape = (nrho, nT)
 
-    comp = Composition.solar()
+    comp = Composition.from_YZ(Y, Z)
     st = compute_eos_state(RR, TT, comp)
-
+    
     fig = plt.figure(constrained_layout=True)
     ax = fig.add_subplot(111)
     im = ax.contourf(TT, RR, st.G1, levels=100, cmap="magma_r")
@@ -86,7 +95,7 @@ def test_quick_visual_overview(tmp_path):
     fig.savefig(out3, dpi=150)
     plt.close(fig)
     
-        # --- EOS sanity 1D: Omega vs (1 + <r>)  [Debye OFF]
+    # --- EOS sanity 1D: Omega vs (1 + <r>)  [Debye OFF]
     rho4 = 1e-7
     T4 = np.logspace(3.5, 6.5, 600)
 
