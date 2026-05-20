@@ -114,17 +114,17 @@ rho = 1e-7
 chi = radiative_conductivity(rho, T)
 ```
 
-### Nuclear (toy fits)
+### Nuclear
 
 ```python
 import numpy as np
-from stellarmicro.nuclear import eps_pp
+from stellarmicro.nuclear import eps_nuc_YZ
 
 rho = 1.0
 T = np.logspace(6, 8, 200)
 Y, Z = 0.25, 0.02
 
-eps = eps_pp(rho, T, Y, Z)
+eps = eps_nuc_YZ(rho, T, Y, Z)
 ```
 
 ---
