@@ -27,12 +27,12 @@ class NuclearOptions:
     include_cno: bool = False
 
     # pp fit: eps_pp = a * X^2 * rho * T^(-2/3) * exp(-b * T^(-1/3))
-    pp_a: float = 1.07e-7
-    pp_b: float = 3.38e3
+    pp_a: float = 2.4e10
+    pp_b: float = 3.4e03
 
-    # placeholder knobs for CNO (you can wire them to an actual fit later)
-    cno_a: float = 0.0
-    cno_b: float = 0.0
+    # cno fit: eps_cno = a * X_H * X_CNO * rho * T^(-2/3) * exp(-b * T^(-1/3))
+    cno_a: float = 8.7e31
+    cno_b: float = 1.5e04
 
     # If True and (C,N,O) absent, use X_rest as proxy for X_CNO
     cno_fallback_to_rest: bool = True
@@ -129,12 +129,8 @@ def eps_cno(rho, T, comp: "Composition", opt: NuclearOptions = NuclearOptions())
 
     XH  = hydrogen_mass_fraction(comp)
     XCNO = cno_mass_fraction(comp, fallback_to_rest=opt.cno_fallback_to_rest)
-
-    # No default physics here (since you had a placeholder); keep it inert unless configured.
     a = float(opt.cno_a)
     b = float(opt.cno_b)
-    if a == 0.0:
-        return np.zeros(np.broadcast(rho, T).shape, dtype=float)
 
     return a * XH * XCNO * rho * T ** (-2.0 / 3.0) * np.exp(-b * T ** (-1.0 / 3.0))
 
