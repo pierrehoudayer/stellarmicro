@@ -31,3 +31,4 @@ a0 = 5.291772105e-9               # cm
 eV = 1.6022e-12                   # erg
 e = 4.80320471e-10                # ESU
 mu_B = 2.780278273e-10            # ESU (Allen 1973)
+chi_Hm = 0.754 * eV               # erg (H- ionisation potential)
